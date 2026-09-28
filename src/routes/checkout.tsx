@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/PageShell";
 import { useCart, selectTotal } from "@/lib/cart-store";
+import { useAuthStore } from "@/lib/auth-store";
 import { formatINR } from "@/lib/products";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +31,14 @@ function Checkout() {
   const [step, setStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
+  const { user, isAuthenticated, isLoaded } = useAuthStore();
+  
+  useEffect(() => {
+    if (isLoaded && !isAuthenticated) {
+      toast.error("Please log in to checkout");
+      router.navigate({ to: "/login", search: { redirect: "/checkout" } });
+    }
+  }, [isLoaded, isAuthenticated, router]);
   
   const [address, setAddress] = useState({
     name: '',

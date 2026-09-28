@@ -29,7 +29,7 @@ export function ProductCard({
   const reset = () => setTilt({ x: 0, y: 0 });
 
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isLoaded } = useAuthStore();
   const { isWishlisted, toggle, pending } = useWishlist();
   const wishlisted = isWishlisted(product.id);
   const isPending = pending[product.id];
@@ -37,6 +37,9 @@ export function ProductCard({
   const onWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isLoaded) {
+      return; // Do nothing or show a tiny toast, but don't redirect yet
+    }
     if (!user) {
       toast.error("Please log in to save items");
       router.navigate({ to: "/login", search: { redirect: window.location.pathname } });

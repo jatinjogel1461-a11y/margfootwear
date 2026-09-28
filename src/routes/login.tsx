@@ -5,7 +5,7 @@ import * as z from "zod";
 import { useAuthStore } from "../lib/auth-store";
 import { Logo } from "../components/Logo";
 import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -23,8 +23,22 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoaded = useAuthStore((state) => state.isLoaded);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect away if already logged in
+  useEffect(() => {
+    if (isLoaded && isAuthenticated) {
+      const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+      let target = "/";
+      if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+        target = redirectParam;
+      }
+      router.navigate({ to: target as any });
+    }
+  }, [isLoaded, isAuthenticated, router]);
 
   const {
     register,
@@ -56,7 +70,13 @@ function LoginPage() {
 
     toast.success("Logged in successfully");
     setIsSubmitting(false);
-    router.navigate({ to: "/" });
+
+    let target = "/";
+    const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+      target = redirectParam;
+    }
+    router.navigate({ to: target as any });
   };
 
   return (
