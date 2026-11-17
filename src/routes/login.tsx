@@ -50,33 +50,38 @@ function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
-    
-    const { error } = await login({
-      email: data.email,
-      password: data.password,
-    });
+    try {
+      const { error } = await login({
+        email: data.email,
+        password: data.password,
+      });
 
-    if (error) {
-      let errorMsg = error.message;
-      if (errorMsg.includes("Email not confirmed")) {
-        errorMsg = "Please confirm your email address before logging in.";
-      } else if (errorMsg.includes("Invalid login credentials")) {
-        errorMsg = "Invalid email or password. Please try again.";
+      if (error) {
+        let errorMsg = error.message;
+        if (errorMsg.includes("Email not confirmed")) {
+          errorMsg = "Please confirm your email address before logging in.";
+        } else if (errorMsg.includes("Invalid login credentials")) {
+          errorMsg = "Invalid email or password. Please try again.";
+        }
+        console.error("Login error:", error);
+        toast.error(errorMsg || "Failed to log in");
+        return;
       }
-      toast.error(errorMsg || "Failed to log in");
+
+      toast.success("Logged in successfully");
+
+      let target = "/";
+      const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+      if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+        target = redirectParam;
+      }
+      router.navigate({ to: target as any });
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    toast.success("Logged in successfully");
-    setIsSubmitting(false);
-
-    let target = "/";
-    const redirectParam = new URLSearchParams(window.location.search).get("redirect");
-    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
-      target = redirectParam;
-    }
-    router.navigate({ to: target as any });
   };
 
   return (
