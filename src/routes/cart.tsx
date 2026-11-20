@@ -53,9 +53,9 @@ function CartPage() {
             <aside className="border border-border rounded-2xl p-6 bg-surface h-fit sticky top-24">
               <h3 className="font-display text-lg mb-4">Summary</h3>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{formatINR(total)}</span></div>
-              <div className="flex justify-between text-sm mt-2"><span className="text-muted-foreground">Shipping</span><span>{total > 5000 ? "Free" : formatINR(199)}</span></div>
+              <div className="flex justify-between text-sm mt-2"><span className="text-muted-foreground">Shipping</span><span>{(total > 5000 || total <= 1) ? "Free" : formatINR(199)}</span></div>
               <div className="border-t border-border my-4" />
-              <div className="flex justify-between font-semibold"><span>Total</span><span>{formatINR(total + (total > 5000 ? 0 : 199))}</span></div>
+              <div className="flex justify-between font-semibold"><span>Total</span><span>{formatINR(total + ((total > 5000 || total <= 1) ? 0 : 199))}</span></div>
               <Link to="/checkout" className="mt-6 block text-center bg-neon text-neon-foreground font-semibold py-3 rounded-full">Checkout</Link>
             </aside>
           </div>

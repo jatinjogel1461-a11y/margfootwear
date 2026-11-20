@@ -27,7 +27,7 @@ const steps = ["Cart", "Address", "Payment", "Confirmation"] as const;
 function Checkout() {
   const { items, clear } = useCart();
   const total = selectTotal(items);
-  const shipping = total > 5000 || total === 0 ? 0 : 199;
+  const shipping = total > 5000 || total <= 1 ? 0 : 199;
   const [step, setStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();

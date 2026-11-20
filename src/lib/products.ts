@@ -39,7 +39,8 @@ const womensSizes = [5, 6, 7, 8, 9, 10];
 const kidsSizes = [1, 2, 3, 4, 5, 6];
 
 export const products: Product[] = [
-  // men (18)
+  // men (19)
+  { id: "sv-zz-demo-shoe", name: "Marg Demo Shoe", category: "men", sub: "Casual", price: 1, colors: C.blackOrange, sizes: mensSizes, isNew: true, releaseDate: "2026-11-20", rating: 5.0, reviews: 1, description: "Demo product for testing checkout." },
   { id: "sv-velocity-x", name: "Marg Velocity X", category: "men", sub: "Running", price: 12999, colors: C.blackOrange, sizes: mensSizes, isNew: true, releaseDate: "2026-06-15", rating: 4.8, reviews: 142, description: "Lightweight carbon-plated runner engineered for speed. Energy-return foam delivers explosive takeoff on every stride." },
   { id: "sv-aero-pulse", name: "Marg Aero Pulse", category: "men", sub: "Running", price: 10499, colors: C.blueWhite, sizes: mensSizes, rating: 4.6, reviews: 89, description: "Daily training shoe with breathable engineered mesh and responsive midsole." },
   { id: "sv-court-pro", name: "Marg Court Pro", category: "men", sub: "Sports", price: 8999, colors: C.blackOrange, sizes: mensSizes, rating: 4.5, reviews: 64, description: "Multi-court traction with lateral support for explosive cuts." },
