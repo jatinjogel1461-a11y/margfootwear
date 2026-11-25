@@ -1,124 +1,132 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { format, isToday } from "date-fns";
-import { Loader2, ShoppingBag, Calendar, IndianRupee, Clock, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
-import { useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { formatINR } from "@/lib/products";
-import type { AdminOrder } from "@/lib/admin";
+import { Users, Activity, BarChart3, ArrowUpRight, Info } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
-  component: AdminOverviewPage,
+  component: AdminDashboardPage,
 });
 
-function AdminOverviewPage() {
-  const { data: orders, isLoading, error } = useQuery({
-    queryKey: ["admin", "orders", "overview"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, user_id, order_number, status, total_amount, shipping_address, payment_method, payment_reference, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as AdminOrder[];
-    },
-  });
+const OVERVIEW_CARDS = [
+  {
+    title: "Total Users",
+    value: "—",
+    subtitle: "Connect auth/users API to load count",
+    icon: Users,
+  },
+  {
+    title: "Recent Activity",
+    value: "—",
+    subtitle: "Events & audit log stream placeholder",
+    icon: Activity,
+  },
+  {
+    title: "Store Statistics",
+    value: "—",
+    subtitle: "Orders, conversion & revenue metrics",
+    icon: BarChart3,
+  },
+] as const;
 
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load overview metrics");
-    }
-  }, [error]);
+const QUICK_SECTIONS = [
+  {
+    to: "/admin/users",
+    title: "Users",
+    description: "Inspect user directory structure, roles, and account status.",
+  },
+  {
+    to: "/admin/content",
+    title: "Content",
+    description: "Manage catalog entries, featured banners, and editorial blocks.",
+  },
+  {
+    to: "/admin/analytics",
+    title: "Analytics",
+    description: "View traffic, engagement, and performance breakdown layouts.",
+  },
+  {
+    to: "/admin/settings",
+    title: "Settings",
+    description: "Review store configuration, notifications, and access notes.",
+  },
+] as const;
 
-  const list = orders ?? [];
-  const totalOrders = list.length;
-  const ordersToday = list.filter((o) => isToday(new Date(o.created_at))).length;
-  const totalRevenue = list
-    .filter((o) => o.status.toLowerCase() !== "cancelled")
-    .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
-  const processingCount = list.filter((o) => o.status.toLowerCase() === "processing").length;
-  const latestFive = list.slice(0, 5);
-
-  const cards = [
-    { label: "Total Orders", value: String(totalOrders), icon: ShoppingBag },
-    { label: "Orders Today", value: String(ordersToday), icon: Calendar },
-    { label: "Total Revenue", value: formatINR(Math.round(totalRevenue)), icon: IndianRupee },
-    { label: "Processing", value: String(processingCount), icon: Clock },
-  ];
-
+function AdminDashboardPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Overview</h1>
-        <p className="text-sm text-muted-foreground">Store performance and latest orders.</p>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-neon">Overview</p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-display font-bold">Admin Dashboard</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Isolated administrative interface for Marg Footwear.
+          </p>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-neon" />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {cards.map((c) => (
-              <div
-                key={c.label}
-                className="rounded-xl border border-border bg-surface p-5 flex items-start justify-between gap-3"
-              >
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{c.label}</p>
-                  <p className="mt-2 text-2xl font-display font-bold tabular-nums">{c.value}</p>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-neon/10 border border-neon/30 flex items-center justify-center text-neon">
-                  <c.icon className="w-4 h-4" />
-                </div>
+      {/* Frontend-only Notice */}
+      <div className="rounded-xl border border-neon/30 bg-neon/5 p-4 flex items-start gap-3 text-sm">
+        <Info className="h-4 w-4 text-neon mt-0.5 flex-shrink-0" />
+        <p className="text-muted-foreground">
+          This is the frontend dashboard structure. Live metrics and management actions require
+          connecting your backend endpoints and role-based access rules.
+        </p>
+      </div>
+
+      {/* Overview Cards: Total Users, Activity, Statistics */}
+      <section aria-label="Overview metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {OVERVIEW_CARDS.map((card) => (
+          <div
+            key={card.title}
+            className="rounded-2xl border border-border bg-surface p-5 flex flex-col justify-between gap-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  {card.title}
+                </p>
+                <p className="mt-2 text-3xl font-display font-bold tabular-nums">{card.value}</p>
               </div>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-neon/10 border border-neon/30 text-neon">
+                <card.icon className="h-5 w-5" />
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">{card.subtitle}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* Activity Placeholder + Quick Navigation */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="lg:col-span-2 rounded-2xl border border-border bg-surface p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold">Activity Feed</h2>
+            <span className="text-[11px] font-mono text-muted-foreground">No live feed connected</span>
+          </div>
+          <div className="rounded-xl border border-dashed border-border bg-background/40 p-8 text-center text-sm text-muted-foreground">
+            Recent user signups, order events, and content updates will appear here once connected to
+            your backend.
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-border bg-surface p-5 space-y-3">
+          <h2 className="font-display font-semibold">Sections</h2>
+          <div className="space-y-2">
+            {QUICK_SECTIONS.map((sec) => (
+              <Link
+                key={sec.to}
+                to={sec.to}
+                className="group block rounded-xl border border-border bg-background/50 p-3 hover:border-neon/60 transition"
+              >
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="group-hover:text-neon transition-colors">{sec.title}</span>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-neon transition-colors" />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{sec.description}</p>
+              </Link>
             ))}
           </div>
-
-          <div className="rounded-xl border border-border bg-surface overflow-hidden">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-2">
-              <h2 className="font-display font-semibold">Latest Orders</h2>
-              <Link
-                to="/admin/orders"
-                className="inline-flex items-center gap-1 text-xs text-neon hover:underline"
-              >
-                View all <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {latestFive.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">No orders yet.</div>
-            ) : (
-              <div className="divide-y divide-border">
-                {latestFive.map((order) => (
-                  <div
-                    key={order.id}
-                    className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-mono font-medium">{order.order_number}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {order.shipping_address?.name || "Customer"} ·{" "}
-                        {format(new Date(order.created_at), "MMM d, yyyy")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono font-semibold">
-                        {formatINR(Number(order.total_amount || 0))}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs border border-border capitalize bg-background">
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+        </section>
+      </div>
     </div>
   );
 }

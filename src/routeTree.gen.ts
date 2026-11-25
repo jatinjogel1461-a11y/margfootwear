@@ -26,8 +26,10 @@ import { Route as SnapshotRouteImport } from './routes/snapshot'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as WomenRouteImport } from './routes/women'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminOrdersRouteImport } from './routes/admin/orders'
-import { Route as AdminProductsRouteImport } from './routes/admin/products'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
+import { Route as AdminContentRouteImport } from './routes/admin/content'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileAddressesRouteImport } from './routes/profile/addresses'
@@ -125,14 +127,24 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminOrdersRoute = AdminOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminProductsRoute = AdminProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -208,8 +220,10 @@ export interface FileRoutesByFullPath {
   '/snapshot': typeof SnapshotRoute
   '/wishlist': typeof WishlistRoute
   '/women': typeof WomenRoute
-  '/admin/orders': typeof AdminOrdersRoute
-  '/admin/products': typeof AdminProductsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/product/$id': typeof ProductIdRoute
   '/profile/addresses': typeof ProfileAddressesRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -238,8 +252,10 @@ export interface FileRoutesByTo {
   '/snapshot': typeof SnapshotRoute
   '/wishlist': typeof WishlistRoute
   '/women': typeof WomenRoute
-  '/admin/orders': typeof AdminOrdersRoute
-  '/admin/products': typeof AdminProductsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/product/$id': typeof ProductIdRoute
   '/profile/addresses': typeof ProfileAddressesRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -271,8 +287,10 @@ export interface FileRoutesById {
   '/snapshot': typeof SnapshotRoute
   '/wishlist': typeof WishlistRoute
   '/women': typeof WomenRoute
-  '/admin/orders': typeof AdminOrdersRoute
-  '/admin/products': typeof AdminProductsRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/product/$id': typeof ProductIdRoute
   '/profile/addresses': typeof ProfileAddressesRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -305,8 +323,10 @@ export interface FileRouteTypes {
     | '/snapshot'
     | '/wishlist'
     | '/women'
-    | '/admin/orders'
-    | '/admin/products'
+    | '/admin/analytics'
+    | '/admin/content'
+    | '/admin/settings'
+    | '/admin/users'
     | '/product/$id'
     | '/profile/addresses'
     | '/profile/edit'
@@ -335,8 +355,10 @@ export interface FileRouteTypes {
     | '/snapshot'
     | '/wishlist'
     | '/women'
-    | '/admin/orders'
-    | '/admin/products'
+    | '/admin/analytics'
+    | '/admin/content'
+    | '/admin/settings'
+    | '/admin/users'
     | '/product/$id'
     | '/profile/addresses'
     | '/profile/edit'
@@ -367,8 +389,10 @@ export interface FileRouteTypes {
     | '/snapshot'
     | '/wishlist'
     | '/women'
-    | '/admin/orders'
-    | '/admin/products'
+    | '/admin/analytics'
+    | '/admin/content'
+    | '/admin/settings'
+    | '/admin/users'
     | '/product/$id'
     | '/profile/addresses'
     | '/profile/edit'
@@ -527,18 +551,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/orders': {
-      id: '/admin/orders'
-      path: '/orders'
-      fullPath: '/admin/orders'
-      preLoaderRoute: typeof AdminOrdersRouteImport
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/products': {
-      id: '/admin/products'
-      path: '/products'
-      fullPath: '/admin/products'
-      preLoaderRoute: typeof AdminProductsRouteImport
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
     '/product/$id': {
@@ -622,14 +660,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
-  AdminOrdersRoute: typeof AdminOrdersRoute
-  AdminProductsRoute: typeof AdminProductsRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminContentRoute: typeof AdminContentRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminOrdersRoute: AdminOrdersRoute,
-  AdminProductsRoute: AdminProductsRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminContentRoute: AdminContentRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

@@ -1,123 +1,140 @@
-import { createFileRoute, Link, Outlet, useRouter } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { LayoutDashboard, Package, ShoppingBag, ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
-import { useAuthStore } from "@/lib/auth-store";
-import { useIsAdmin } from "@/lib/admin";
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
+  ArrowLeft,
+  ShieldCheck,
+} from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
-    meta: [{ title: "Admin — Marg" }],
+    meta: [{ title: "Admin Dashboard — Marg" }],
   }),
   component: AdminLayout,
 });
 
-const ADMIN_LINKS = [
-  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
-  { to: "/admin/products", label: "Products", icon: Package },
+const SIDEBAR_ITEMS = [
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/users", label: "Users", icon: Users, exact: false },
+  { to: "/admin/content", label: "Content", icon: FileText, exact: false },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false },
+  { to: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
 function AdminLayout() {
-  const router = useRouter();
-  const { user, isAuthenticated, isLoaded } = useAuthStore();
-  const { data: isAdmin, isLoading: checkingAdmin, isError } = useIsAdmin(user?.id);
-
-  useEffect(() => {
-    if (isLoaded && !isAuthenticated) {
-      router.navigate({ to: "/login", search: { redirect: "/admin" } });
-    }
-  }, [isLoaded, isAuthenticated, router]);
-
-  if (!isLoaded || (isAuthenticated && checkingAdmin)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-neon" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return null;
-  }
-
-  if (isError || !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="max-w-md w-full rounded-2xl border border-border bg-surface p-8 text-center space-y-4">
-          <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-display font-bold">Access denied</h1>
-          <p className="text-sm text-muted-foreground">
-            You do not have administrator permissions to view this page.
-          </p>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-full bg-neon text-neon-foreground font-semibold px-5 py-2.5 text-sm hover:opacity-90 transition"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to store
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background pt-24 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full flex flex-col md:flex-row gap-8 items-start">
-        {/* Mobile Navigation */}
-        <div className="w-full md:hidden flex overflow-x-auto pb-1 border-b border-border sticky top-16 z-20 bg-background/90 backdrop-blur-md">
-          {ADMIN_LINKS.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground whitespace-nowrap border-b-2 border-transparent"
-              activeProps={{ className: "text-foreground border-neon font-semibold" }}
-              activeOptions={{ exact: "exact" in link ? link.exact : false }}
-            >
-              <link.icon size={16} />
-              {link.label}
-            </Link>
-          ))}
+    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+      {/* Mobile Top Bar */}
+      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-neon/15 border border-neon/40 text-neon">
+            <ShieldCheck className="h-4 w-4" />
+          </span>
+          <span className="font-display font-bold tracking-tight">Marg Admin</span>
         </div>
 
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:flex w-60 flex-shrink-0 flex-col gap-4 sticky top-24">
-          <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-neon font-semibold">
-              Marg Admin
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground truncate">{user.email}</p>
-          </div>
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          aria-label={mobileMenuOpen ? "Close admin menu" : "Open admin menu"}
+          aria-expanded={mobileMenuOpen}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-foreground hover:border-neon transition"
+        >
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </header>
 
-          <nav className="flex flex-col gap-1" aria-label="Admin navigation">
-            {ADMIN_LINKS.map((link) => (
+      {/* Mobile Drawer Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-b border-border bg-surface px-4 py-3 space-y-1">
+          <nav aria-label="Mobile admin navigation" className="flex flex-col gap-1">
+            {SIDEBAR_ITEMS.map((item) => (
               <Link
-                key={link.to}
-                to={link.to}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-muted-foreground hover:bg-surface hover:text-foreground transition-all group"
-                activeProps={{ className: "bg-surface text-foreground font-medium border border-border" }}
-                activeOptions={{ exact: "exact" in link ? link.exact : false }}
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileMenuOpen(false)}
+                activeOptions={{ exact: item.exact }}
+                activeProps={{
+                  className: "bg-neon/15 text-neon border-neon/40 font-semibold",
+                }}
+                className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-background/60 transition"
               >
-                <link.icon size={18} className="group-hover:text-neon transition-colors" />
-                {link.label}
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
               </Link>
             ))}
           </nav>
+          <div className="pt-2 border-t border-border">
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-neon transition"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to Storefront
+            </Link>
+          </div>
+        </div>
+      )}
 
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex md:w-64 md:flex-shrink-0 flex-col border-r border-border bg-surface/60 sticky top-0 h-screen">
+        <div className="p-5 border-b border-border flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-neon/15 border border-neon/40 text-neon">
+            <ShieldCheck className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-display font-bold leading-none">Marg Admin</p>
+            <p className="mt-1 text-[11px] uppercase tracking-widest text-muted-foreground">
+              Control Panel
+            </p>
+          </div>
+        </div>
+
+        <nav aria-label="Admin navigation" className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {SIDEBAR_ITEMS.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.exact }}
+              activeProps={{
+                className:
+                  "bg-neon/15 text-neon border-neon/40 font-semibold shadow-[0_0_14px_rgba(255,106,0,0.12)]",
+              }}
+              className="flex items-center gap-3 rounded-xl border border-transparent px-3.5 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-background/60 transition"
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-border space-y-3">
+          <div className="rounded-lg border border-border bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">
+            Frontend UI shell · Backend integration pending
+          </div>
           <Link
             to="/"
-            className="flex items-center gap-2 px-4 py-2.5 text-xs text-muted-foreground hover:text-neon transition"
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-neon transition"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to store
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Storefront
           </Link>
-        </aside>
+        </div>
+      </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 w-full min-w-0">
-          <Outlet />
-        </main>
-      </div>
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto">
+        <Outlet />
+      </main>
     </div>
   );
 }
