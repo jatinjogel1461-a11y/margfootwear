@@ -3,7 +3,6 @@ import { useInView } from "framer-motion";
 import { LogoMark } from "./Logo";
 import { getShoeVariant } from "../lib/shoeModels";
 import type {
-  CompareObjectId,
   DimensionKey,
   DimensionUnit,
   ShoeDimensions,
@@ -40,8 +39,6 @@ export function Shoe3D({
   onShowDimensionsChange,
   highlightedDim = null,
   sizeScale,
-  compareObject = "none",
-  referenceLengthMm,
 }: {
   color?: string;
   slug?: string;
@@ -58,8 +55,6 @@ export function Shoe3D({
   onShowDimensionsChange?: (v: boolean) => void;
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
-  compareObject?: CompareObjectId;
-  referenceLengthMm?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // Only render or animate when the shoe is within 200px of the viewport
@@ -92,8 +87,6 @@ export function Shoe3D({
             onShowDimensionsChange={onShowDimensionsChange}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
-            compareObject={compareObject}
-            referenceLengthMm={referenceLengthMm}
           />
         </Suspense>
       ) : (

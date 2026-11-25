@@ -9,10 +9,8 @@ import { Star, ShoppingBag, Zap } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoeSpecs } from "@/components/ShoeSpecs";
-import { FindMySize } from "@/components/FindMySize";
 import {
   getDimensions,
-  getReferenceSize,
   getSizeScaleRatios,
   type DimensionKey,
   type DimensionUnit,
@@ -59,9 +57,7 @@ function ProductPage() {
   const color = product.colors[colorIdx];
   const dimensions = getDimensions(product, size);
   const sizeScale = getSizeScaleRatios(product, size);
-  const referenceLengthMm = getDimensions(product, getReferenceSize(product)).length;
 
-  // Reset per-product state gracefully when navigating between products
   useEffect(() => {
     setColorIdx(0);
     setSize(product.sizes[Math.floor(product.sizes.length / 2)]);
@@ -69,26 +65,6 @@ function ProductPage() {
     setShowDimensions(false);
     setHighlightedDim(null);
   }, [product.id, product.sizes]);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem("marg-dim-unit");
-      if (saved === "mm" || saved === "cm" || saved === "in") {
-        setUnit(saved);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const handleUnitChange = (u: DimensionUnit) => {
-    setUnit(u);
-    try {
-      window.localStorage.setItem("marg-dim-unit", u);
-    } catch {
-      // ignore
-    }
-  };
 
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
@@ -107,12 +83,11 @@ function ProductPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-x-10 lg:gap-y-6 lg:items-start">
-        {/* 1. 3D Viewer: Mobile order 1 | Desktop col 1, row 1 */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 md:py-10 grid lg:grid-cols-2 gap-6 md:gap-10 items-start">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="order-1 lg:order-none lg:col-start-1 lg:row-start-1 relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden"
+          className="relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden"
         >
           <Shoe3D
             color={color.hex}
@@ -125,17 +100,10 @@ function ProductPage() {
             onShowDimensionsChange={setShowDimensions}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
-            referenceLengthMm={referenceLengthMm}
           />
         </motion.div>
 
-        {/* 2. Buy Box: Mobile order 2 | Desktop col 2, sticky */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-1"
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <p className="text-xs tracking-[0.3em] text-neon">{product.sub.toUpperCase()}</p>
           <h1 className="mt-2 text-4xl md:text-5xl font-display font-bold">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
@@ -147,11 +115,23 @@ function ProductPage() {
             <span className="text-sm text-muted-foreground">{product.rating} ({product.reviews} reviews)</span>
           </div>
 
-          <p className="mt-6 text-3xl font-bold">{formatINR(product.price * qty)}</p>
+          <p className="mt-5 text-3xl font-bold">{formatINR(product.price * qty)}</p>
+
+          <ShoeSpecs
+            dimensions={dimensions}
+            unit={unit}
+            onUnitChange={setUnit}
+            highlightedDim={highlightedDim}
+            onHighlightDim={setHighlightedDim}
+            onSelectDim={(dim) => {
+              setShowDimensions(true);
+              setHighlightedDim(dim);
+            }}
+          />
 
           <p className="mt-5 text-muted-foreground leading-relaxed">{product.description}</p>
 
-          <div className="mt-7">
+          <div className="mt-6">
             <h4 className="text-xs tracking-[0.25em] text-muted-foreground mb-3">COLOR · {color.name.toUpperCase()}</h4>
             <div className="flex gap-2">
               {product.colors.map((c: { name: string; hex: string }, i: number) => (
@@ -166,7 +146,7 @@ function ProductPage() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-5">
             <h4 className="text-xs tracking-[0.25em] text-muted-foreground mb-3">SIZE (UK)</h4>
             <div className="grid grid-cols-6 gap-2">
               {product.sizes.map((s: number) => (
@@ -179,7 +159,7 @@ function ProductPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-5 flex items-center gap-3">
             <div className="flex items-center border border-border rounded-md">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-3 py-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-secondary">−</button>
               <span className="px-4 text-sm w-10 text-center">{qty}</span>
@@ -187,7 +167,7 @@ function ProductPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => onAdd(false)}
@@ -204,37 +184,6 @@ function ProductPage() {
             </motion.button>
           </div>
         </motion.div>
-
-        {/* 3. Dimensions, Compare Link & Find My Size: Mobile order 3 | Desktop col 1, row 2 */}
-        <div className="order-3 lg:order-none lg:col-start-1 lg:row-start-2">
-          <ShoeSpecs
-            dimensions={dimensions}
-            unit={unit}
-            onUnitChange={handleUnitChange}
-            highlightedDim={highlightedDim}
-            onHighlightDim={setHighlightedDim}
-            onSelectDim={(dim) => {
-              setShowDimensions(true);
-              setHighlightedDim(dim);
-            }}
-          />
-
-          <div className="mt-2.5">
-            <Link
-              to="/compare"
-              search={{ a: product.id, sa: size }}
-              className="inline-block text-xs text-muted-foreground hover:text-neon transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-neon rounded"
-            >
-              Compare with another shoe →
-            </Link>
-          </div>
-
-          <FindMySize
-            product={product}
-            selectedSize={size}
-            onSelectSize={setSize}
-          />
-        </div>
       </div>
 
       {/* Reviews */}

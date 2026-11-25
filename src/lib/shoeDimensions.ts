@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Shoe dimension data, size-scaling & fit recommendation helpers
+// Shoe dimension data & size-scaling helpers
 // Note: Values below are approximate placeholders until real measurements
 // are entered for each SKU.
 // ---------------------------------------------------------------------------
@@ -7,13 +7,6 @@ import type { Category, Product, SubCategory } from "./products";
 
 export type DimensionUnit = "mm" | "cm" | "in";
 export type DimensionKey = "length" | "width" | "height";
-export type FitTag = "Snug" | "Perfect" | "Loose";
-export type CompareObjectId =
-  | "none"
-  | "credit-card"
-  | "smartphone"
-  | "cricket-ball"
-  | "a4-sheet";
 
 export interface ShoeDimensions {
   length: number;
@@ -26,20 +19,6 @@ export interface SizeScaleRatios {
   widthRatio: number;
   heightRatio: number;
 }
-
-export interface CompareObjectSpec {
-  id: Exclude<CompareObjectId, "none">;
-  label: string;
-  sizeMm: number;
-  shortLabel: string;
-}
-
-export const COMPARE_OBJECTS: CompareObjectSpec[] = [
-  { id: "credit-card", label: "Credit card (85.6 mm)", sizeMm: 85.6, shortLabel: "Credit card · 85.6 mm" },
-  { id: "smartphone", label: "Smartphone (150 mm)", sizeMm: 150, shortLabel: "Smartphone · 150 mm" },
-  { id: "cricket-ball", label: "Cricket ball (71 mm)", sizeMm: 71, shortLabel: "Cricket ball · 71 mm" },
-  { id: "a4-sheet", label: "A4 sheet (297 mm)", sizeMm: 297, shortLabel: "A4 sheet · 297 mm" },
-];
 
 /** Reference UK size for each category */
 const REFERENCE_SIZE: Record<Category, number> = {
@@ -159,94 +138,4 @@ export function formatDimension(mm: number, unit: DimensionUnit): string {
     case "in":
       return `${(mm / 25.4).toFixed(1)} in`;
   }
-}
-
-export interface SizeFitEntry {
-  size: number;
-  innerLengthMm: number;
-  toeRoomMm: number;
-  tag: FitTag;
-}
-
-export type FitStatus = "fit" | "too-short" | "too-long";
-
-export interface SizeRecommendation {
-  recommendedSize: number | null;
-  snugAlternative: number | null;
-  entries: SizeFitEntry[];
-  fitStatus: FitStatus;
-  outOfRange: boolean;
-}
-
-/**
- * Recommends a UK size from the product's available sizes based on foot length (cm).
- * inner length = shoe length - 14 mm; target toe room >= 10 mm.
- */
-export function recommendSize(product: Product, footLengthCm: number): SizeRecommendation {
-  const footMm = footLengthCm * 10;
-  const sortedSizes = [...product.sizes].sort((a, b) => a - b);
-
-  const entries: SizeFitEntry[] = sortedSizes.map((size) => {
-    const shoeLen = getDimensions(product, size).length;
-    const innerLengthMm = Math.round((shoeLen - 14) * 10) / 10;
-    const toeRoomMm = Math.round((innerLengthMm - footMm) * 10) / 10;
-    let tag: FitTag;
-    if (toeRoomMm < 10) {
-      tag = "Snug";
-    } else if (toeRoomMm <= 18.5) {
-      tag = "Perfect";
-    } else {
-      tag = "Loose";
-    }
-    return { size, innerLengthMm, toeRoomMm, tag };
-  });
-
-  const smallest = entries[0];
-  const largest = entries[entries.length - 1];
-
-  if (!smallest || !largest) {
-    return {
-      recommendedSize: null,
-      snugAlternative: null,
-      entries,
-      fitStatus: "too-long",
-      outOfRange: true,
-    };
-  }
-
-  // Longer than largest available comfortable fit
-  const fit = entries.find((e) => e.toeRoomMm >= 10) ?? null;
-  if (!fit) {
-    return {
-      recommendedSize: largest.size,
-      snugAlternative: null,
-      entries,
-      fitStatus: "too-long",
-      outOfRange: true,
-    };
-  }
-
-  // Shorter than smallest available comfortable fit (even smallest feels loose)
-  if (fit.size === smallest.size && smallest.toeRoomMm > 18.5) {
-    return {
-      recommendedSize: smallest.size,
-      snugAlternative: null,
-      entries,
-      fitStatus: "too-short",
-      outOfRange: true,
-    };
-  }
-
-  // If foot is between sizes: previous size has 0 <= toeRoom < 10
-  const fitIdx = entries.indexOf(fit);
-  const prev = fitIdx > 0 ? entries[fitIdx - 1] : null;
-  const snugAlternative = prev && prev.toeRoomMm >= 0 && prev.toeRoomMm < 10 ? prev.size : null;
-
-  return {
-    recommendedSize: fit.size,
-    snugAlternative,
-    entries,
-    fitStatus: "fit",
-    outOfRange: false,
-  };
 }
