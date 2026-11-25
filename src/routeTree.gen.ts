@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -24,6 +25,9 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SnapshotRouteImport } from './routes/snapshot'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as WomenRouteImport } from './routes/women'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminOrdersRouteImport } from './routes/admin/orders'
+import { Route as AdminProductsRouteImport } from './routes/admin/products'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileAddressesRouteImport } from './routes/profile/addresses'
@@ -44,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -111,6 +120,21 @@ const WomenRoute = WomenRouteImport.update({
   path: '/women',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOrdersRoute = AdminOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsRoute = AdminProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -170,6 +194,7 @@ const ApiRazorpayWebhookRoute = ApiRazorpayWebhookRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -183,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/snapshot': typeof SnapshotRoute
   '/wishlist': typeof WishlistRoute
   '/women': typeof WomenRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/products': typeof AdminProductsRoute
   '/product/$id': typeof ProductIdRoute
   '/profile/addresses': typeof ProfileAddressesRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -190,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/profile/password': typeof ProfilePasswordRoute
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
+  '/admin/': typeof AdminIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
@@ -210,6 +238,8 @@ export interface FileRoutesByTo {
   '/snapshot': typeof SnapshotRoute
   '/wishlist': typeof WishlistRoute
   '/women': typeof WomenRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/products': typeof AdminProductsRoute
   '/product/$id': typeof ProductIdRoute
   '/profile/addresses': typeof ProfileAddressesRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -217,6 +247,7 @@ export interface FileRoutesByTo {
   '/profile/password': typeof ProfilePasswordRoute
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
+  '/admin': typeof AdminIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
@@ -226,6 +257,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -239,6 +271,8 @@ export interface FileRoutesById {
   '/snapshot': typeof SnapshotRoute
   '/wishlist': typeof WishlistRoute
   '/women': typeof WomenRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/products': typeof AdminProductsRoute
   '/product/$id': typeof ProductIdRoute
   '/profile/addresses': typeof ProfileAddressesRoute
   '/profile/edit': typeof ProfileEditRoute
@@ -246,6 +280,7 @@ export interface FileRoutesById {
   '/profile/password': typeof ProfilePasswordRoute
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
+  '/admin/': typeof AdminIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
@@ -256,6 +291,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/cart'
     | '/checkout'
     | '/contact'
@@ -269,6 +305,8 @@ export interface FileRouteTypes {
     | '/snapshot'
     | '/wishlist'
     | '/women'
+    | '/admin/orders'
+    | '/admin/products'
     | '/product/$id'
     | '/profile/addresses'
     | '/profile/edit'
@@ -276,6 +314,7 @@ export interface FileRouteTypes {
     | '/profile/password'
     | '/profile/payment'
     | '/profile/wishlist'
+    | '/admin/'
     | '/profile/'
     | '/api/razorpay/create-order'
     | '/api/razorpay/verify'
@@ -296,6 +335,8 @@ export interface FileRouteTypes {
     | '/snapshot'
     | '/wishlist'
     | '/women'
+    | '/admin/orders'
+    | '/admin/products'
     | '/product/$id'
     | '/profile/addresses'
     | '/profile/edit'
@@ -303,6 +344,7 @@ export interface FileRouteTypes {
     | '/profile/password'
     | '/profile/payment'
     | '/profile/wishlist'
+    | '/admin'
     | '/profile'
     | '/api/razorpay/create-order'
     | '/api/razorpay/verify'
@@ -311,6 +353,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/cart'
     | '/checkout'
     | '/contact'
@@ -324,6 +367,8 @@ export interface FileRouteTypes {
     | '/snapshot'
     | '/wishlist'
     | '/women'
+    | '/admin/orders'
+    | '/admin/products'
     | '/product/$id'
     | '/profile/addresses'
     | '/profile/edit'
@@ -331,6 +376,7 @@ export interface FileRouteTypes {
     | '/profile/password'
     | '/profile/payment'
     | '/profile/wishlist'
+    | '/admin/'
     | '/profile/'
     | '/api/razorpay/create-order'
     | '/api/razorpay/verify'
@@ -340,6 +386,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
@@ -373,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -466,6 +520,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WomenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/orders': {
+      id: '/admin/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products': {
+      id: '/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -546,6 +621,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminProductsRoute: typeof AdminProductsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminOrdersRoute: AdminOrdersRoute,
+  AdminProductsRoute: AdminProductsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface ProfileRouteChildren {
   ProfileAddressesRoute: typeof ProfileAddressesRoute
   ProfileEditRoute: typeof ProfileEditRoute
@@ -572,6 +661,7 @@ const ProfileRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRouteWithChildren,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,

@@ -5,9 +5,17 @@ import { useCart, selectCount } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { useWishlist } from "@/lib/wishlist-store";
 import { supabase } from "@/lib/supabaseClient";
-import { ShoppingBag, Search, Menu, X, User, Heart, Sun, Moon } from "lucide-react";
+import { ShoppingBag, Search, Menu, X, User, Heart, Sun, Moon, Shield, Package } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "./ThemeProvider";
+import { useIsAdmin } from "@/lib/admin";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 const links = [
   { to: "/", label: "Home" },
@@ -31,6 +39,7 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
 
   const [sessionUser, setSessionUser] = useState<any>(null);
+  const { data: isAdmin } = useIsAdmin(sessionUser?.id);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -141,20 +150,52 @@ export function Navbar() {
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-          <Link
-            to={sessionUser || isAuthenticated ? "/profile" : "/login"}
-            aria-label="Profile"
-            className="flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 text-muted-foreground hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground"
-            activeProps={{ className: "!bg-neon !text-neon-foreground shadow-[0_4px_12px_rgba(255,106,0,0.3)]" }}
-          >
-            {(sessionUser || isAuthenticated) ? (
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-neon text-neon-foreground text-xs font-bold">
-                {getInitial()}
-              </div>
-            ) : (
+          {(sessionUser || isAuthenticated) ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="User menu"
+                  className="flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 text-muted-foreground hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground focus:outline-none"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-neon text-neon-foreground text-xs font-bold">
+                    {getInitial()}
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 bg-background border-border">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
+                    <User className="h-4 w-4" /> My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile/orders" className="flex items-center gap-2 cursor-pointer">
+                    <Package className="h-4 w-4" /> My Orders
+                  </Link>
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 text-neon font-medium cursor-pointer">
+                        <Shield className="h-4 w-4" /> Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link
+              to="/login"
+              aria-label="Profile"
+              className="flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 text-muted-foreground hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground"
+              activeProps={{ className: "!bg-neon !text-neon-foreground shadow-[0_4px_12px_rgba(255,106,0,0.3)]" }}
+            >
               <User className="h-4 w-4" />
-            )}
-          </Link>
+            </Link>
+          )}
           <button
             aria-label="Menu"
             onClick={() => setMobileOpen(true)}
@@ -244,6 +285,16 @@ export function Navbar() {
                   <User className="w-5 h-5" />
                   {isAuthenticated ? "My Account" : "Sign In"}
                 </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 w-full transition-all duration-300 border-l-[3px] border-transparent hover:border-neon pl-4 py-4 text-xl text-neon font-medium"
+                  >
+                    <Shield className="w-5 h-5" />
+                    Admin
+                  </Link>
+                )}
               </motion.div>
             </nav>
 
