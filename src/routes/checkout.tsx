@@ -3,7 +3,7 @@ import { PageShell } from "@/components/PageShell";
 import { useCart, selectTotal } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { formatINR } from "@/lib/products";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
@@ -11,8 +11,6 @@ import { LogoMark } from "@/components/Logo";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { useRouter } from "@tanstack/react-router";
-import { QRCodeSVG } from "qrcode.react";
-import { PAYMENT_CONFIG } from "@/config/payment";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [
@@ -24,22 +22,46 @@ export const Route = createFileRoute("/checkout")({
 
 const steps = ["Cart", "Address", "Payment", "Confirmation"] as const;
 
+// ---------------------------------------------------------------------------
+// Load Razorpay checkout.js once, lazily
+// ---------------------------------------------------------------------------
+let razorpayScriptPromise: Promise<void> | null = null;
+function loadRazorpayScript(): Promise<void> {
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+  razorpayScriptPromise = new Promise((resolve, reject) => {
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve();
+    s.onerror = () => {
+      razorpayScriptPromise = null;
+      reject(new Error("Failed to load Razorpay SDK"));
+    };
+    document.head.appendChild(s);
+  });
+  return razorpayScriptPromise;
+}
+
 function Checkout() {
   const { items, clear } = useCart();
   const total = selectTotal(items);
-  const shipping = total > 5000 || total === 0 ? 0 : 199;
+  const shipping = total > 5000 || total <= 1 ? 0 : 199;
   const [step, setStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const { user, isAuthenticated, isLoaded } = useAuthStore();
-  
+  const [confirmedOrderNumber, setConfirmedOrderNumber] = useState("");
+
   useEffect(() => {
     if (isLoaded && !isAuthenticated) {
       toast.error("Please log in to checkout");
       router.navigate({ to: "/login", search: { redirect: "/checkout" } });
     }
   }, [isLoaded, isAuthenticated, router]);
-  
+
   const [address, setAddress] = useState({
     name: '',
     phone: '',
@@ -48,82 +70,125 @@ function Checkout() {
     pincode: ''
   });
 
-  const [utr, setUtr] = useState("");
-  const [orderNumber] = useState("ORD-" + Math.random().toString(36).substr(2, 9).toUpperCase());
-  
   const paymentAmount = total + shipping;
-  const upiLink = `upi://pay?pa=${PAYMENT_CONFIG.UPI_ID}&pn=${PAYMENT_CONFIG.PAYEE_NAME}&am=${paymentAmount}&cu=INR&tn=${orderNumber}`;
 
-  const handleCopyUpi = () => {
-    navigator.clipboard.writeText(PAYMENT_CONFIG.UPI_ID);
-    toast.success("UPI ID copied to clipboard!");
-  };
-
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please log in to place an order");
-      router.navigate({ to: "/login", search: { redirect: "/checkout" } });
-      return;
+  // Preload Razorpay script when user reaches the payment step
+  useEffect(() => {
+    if (step === 2) {
+      loadRazorpayScript().catch(() => {});
     }
+  }, [step]);
 
+  const handlePay = useCallback(async () => {
     setIsProcessing(true);
-    
-    // Note: In a real app, payment processing and total validation should happen securely on the backend.
-    const finalTotal = total + shipping;
 
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        user_id: user.id,
-        total_amount: finalTotal,
-        status: 'pending',
-        order_number: orderNumber,
-        shipping_address: address,
-        payment_method: 'upi_qr',
-        payment_reference: utr
-      })
-      .select()
-      .single();
+    try {
+      // 1. Get session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Please log in to place an order");
+        router.navigate({ to: "/login", search: { redirect: "/checkout" } });
+        setIsProcessing(false);
+        return;
+      }
 
-    if (orderError) {
-      console.error("Order creation failed:", orderError);
-      toast.error("Failed to place order: " + orderError.message);
+      // 2. Create order on the server
+      const createRes = await fetch("/api/razorpay/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          items: items.map(i => ({
+            product_id: i.productId,
+            quantity: i.qty,
+            size: String(i.size),
+            color: i.color,
+            image: "",
+          })),
+          address,
+        }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({ error: "Failed to create order" }));
+        toast.error(err.error || "Failed to create order");
+        setIsProcessing(false);
+        return;
+      }
+
+      const { razorpayOrderId, amount, currency, keyId, orderNumber } = await createRes.json();
+
+      // 3. Load Razorpay SDK
+      await loadRazorpayScript();
+
+      // 4. Open Razorpay checkout
+      const rzp = new (window as any).Razorpay({
+        key: keyId,
+        amount,
+        currency,
+        name: "Marg Footwear",
+        description: `Order ${orderNumber}`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: address.name || user?.name || "",
+          email: user?.email || "",
+          contact: address.phone || user?.phone || "",
+        },
+        theme: { color: "#ff6a00" },
+        handler: async (response: any) => {
+          // 5. Verify payment on the server
+          try {
+            const verifyRes = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            if (!verifyRes.ok) {
+              const err = await verifyRes.json().catch(() => ({ error: "Payment verification failed" }));
+              toast.error(err.error || "Payment verification failed");
+              setIsProcessing(false);
+              return;
+            }
+
+            const { orderNumber: confirmedNum } = await verifyRes.json();
+            clear();
+            setConfirmedOrderNumber(confirmedNum || orderNumber);
+            setStep(3);
+          } catch {
+            toast.error("Payment verification failed. Contact support if debited.");
+          }
+          setIsProcessing(false);
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+            toast("Payment cancelled. You can try again.");
+          },
+        },
+      });
+
+      rzp.on("payment.failed", (resp: any) => {
+        toast.error(resp?.error?.description || "Payment failed. Please try again.");
+        setIsProcessing(false);
+      });
+
+      rzp.open();
+    } catch (err: any) {
+      console.error("Payment error:", err);
+      toast.error(err?.message || "Something went wrong");
       setIsProcessing(false);
-      return;
     }
-
-    const orderItems = items.map((item: any) => ({
-      order_id: order.id,
-      product_id: item.productId,
-      product_name: item.name,
-      product_image_url: item.image || '',
-      quantity: item.qty,
-      price: item.price,
-      size: item.size,
-      color: item.color
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-
-    if (itemsError) {
-      console.error("Order items creation failed:", itemsError);
-      // Delete the order if items failed so we don't leave a ghost order
-      await supabase.from('orders').delete().eq('id', order.id);
-      
-      toast.error("Failed to save order items: " + itemsError.message);
-      setIsProcessing(false);
-      return;
-    }
-
-    clear();
-    setStep(3);
-    setIsProcessing(false);
-  };
+  }, [items, address, user, router, clear]);
 
   useEffect(() => {
     if (step === 3) {
@@ -190,64 +255,30 @@ function Checkout() {
             )}
 
             {step === 2 && (
-              <form onSubmit={handlePayment}>
+              <div>
                 <h2 className="text-2xl font-display font-bold mb-5">Payment</h2>
-                
-                <div className="bg-foreground/[0.02] border border-border rounded-xl p-6 text-center space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold">Scan & Pay</h3>
-                    <p className="text-2xl font-display font-bold mt-2 text-neon">{formatINR(paymentAmount)}</p>
-                  </div>
-                  
-                  <div className="flex justify-center bg-white p-4 rounded-xl mx-auto w-fit">
-                    <QRCodeSVG value={upiLink} size={200} />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-center gap-2 text-sm">
-                      <span className="text-muted-foreground">UPI ID:</span>
-                      <span className="font-medium">{PAYMENT_CONFIG.UPI_ID}</span>
-                      <button 
-                        type="button" 
-                        onClick={handleCopyUpi}
-                        className="text-xs bg-foreground/10 hover:bg-foreground/20 px-2 py-1 rounded transition-colors"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                    
-                    <a 
-                      href={upiLink}
-                      className="inline-block sm:hidden w-full bg-border text-foreground hover:bg-border/80 font-semibold py-2.5 rounded-full text-sm"
-                    >
-                      Pay with UPI App
-                    </a>
-                  </div>
-                </div>
 
-                <div className="mt-6">
-                  <Input 
-                    label="UPI Transaction ID (UTR)" 
-                    required 
-                    placeholder="e.g. 301234567890" 
-                    pattern="\d{12}"
-                    maxLength={12}
-                    minLength={12}
-                    title="Please enter the 12-digit UTR reference number"
-                    value={utr}
-                    onChange={(e) => setUtr(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1.5">Enter the 12-digit reference number after paying.</p>
+                <div className="bg-foreground/[0.02] border border-border rounded-xl p-6 text-center space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Pay Securely</h3>
+                    <p className="text-2xl font-display font-bold mt-2 text-neon">{formatINR(paymentAmount)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">UPI, Cards, Net Banking, Wallets</p>
+                  </div>
                 </div>
 
                 <Summary total={total} shipping={shipping} />
                 <div className="mt-6 flex gap-3">
                   <button type="button" onClick={() => setStep(1)} disabled={isProcessing} className="flex-1 border border-border py-3 rounded-full disabled:opacity-50">Back</button>
-                  <button type="submit" disabled={isProcessing || utr.length !== 12} className="flex-1 bg-neon text-neon-foreground font-semibold py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-50">
-                    {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "I have paid"}
+                  <button
+                    type="button"
+                    onClick={handlePay}
+                    disabled={isProcessing}
+                    className="flex-1 bg-neon text-neon-foreground font-semibold py-3 rounded-full flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "Pay Now"}
                   </button>
                 </div>
-              </form>
+              </div>
             )}
 
             {step === 3 && (
@@ -255,8 +286,11 @@ function Checkout() {
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }} className="inline-flex">
                   <LogoMark className="h-20 w-20" glow />
                 </motion.div>
-                <h2 className="mt-6 text-2xl sm:text-3xl font-display font-bold">Payment verification pending.</h2>
-                <p className="mt-3 text-muted-foreground">We will confirm your order once we receive your payment.</p>
+                <h2 className="mt-6 text-2xl sm:text-3xl font-display font-bold">Order Confirmed!</h2>
+                {confirmedOrderNumber && (
+                  <p className="mt-2 text-neon font-semibold">{confirmedOrderNumber}</p>
+                )}
+                <p className="mt-3 text-muted-foreground">Your payment was successful. We&apos;re getting your order ready.</p>
                 <Link to="/profile/orders" className="mt-8 inline-block bg-neon text-neon-foreground font-semibold px-7 py-3 rounded-full">View My Orders</Link>
               </div>
             )}

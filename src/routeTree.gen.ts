@@ -9,93 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WomenRouteImport } from './routes/women'
-import { Route as WishlistRouteImport } from './routes/wishlist'
-import { Route as SnapshotRouteImport } from './routes/snapshot'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
-import { Route as MenRouteImport } from './routes/men'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as KidsRouteImport } from './routes/kids'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as CartRouteImport } from './routes/cart'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProfileIndexRouteImport } from './routes/profile/index'
-import { Route as ProfileWishlistRouteImport } from './routes/profile/wishlist'
-import { Route as ProfilePaymentRouteImport } from './routes/profile/payment'
-import { Route as ProfilePasswordRouteImport } from './routes/profile/password'
-import { Route as ProfileOrdersRouteImport } from './routes/profile/orders'
-import { Route as ProfileEditRouteImport } from './routes/profile/edit'
-import { Route as ProfileAddressesRouteImport } from './routes/profile/addresses'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as KidsRouteImport } from './routes/kids'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as MenRouteImport } from './routes/men'
+import { Route as NewArrivalsRouteImport } from './routes/new-arrivals'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SnapshotRouteImport } from './routes/snapshot'
+import { Route as WishlistRouteImport } from './routes/wishlist'
+import { Route as WomenRouteImport } from './routes/women'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as ProfileAddressesRouteImport } from './routes/profile/addresses'
+import { Route as ProfileEditRouteImport } from './routes/profile/edit'
+import { Route as ProfileOrdersRouteImport } from './routes/profile/orders'
+import { Route as ProfilePasswordRouteImport } from './routes/profile/password'
+import { Route as ProfilePaymentRouteImport } from './routes/profile/payment'
+import { Route as ProfileWishlistRouteImport } from './routes/profile/wishlist'
+import { Route as ApiRazorpayCreateOrderRouteImport } from './routes/api/razorpay/create-order'
+import { Route as ApiRazorpayVerifyRouteImport } from './routes/api/razorpay/verify'
+import { Route as ApiRazorpayWebhookRouteImport } from './routes/api/razorpay/webhook'
 
-const WomenRoute = WomenRouteImport.update({
-  id: '/women',
-  path: '/women',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WishlistRoute = WishlistRouteImport.update({
-  id: '/wishlist',
-  path: '/wishlist',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SnapshotRoute = SnapshotRouteImport.update({
-  id: '/snapshot',
-  path: '/snapshot',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewArrivalsRoute = NewArrivalsRouteImport.update({
-  id: '/new-arrivals',
-  path: '/new-arrivals',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MenRoute = MenRouteImport.update({
-  id: '/men',
-  path: '/men',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KidsRoute = KidsRouteImport.update({
-  id: '/kids',
-  path: '/kids',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CheckoutRoute = CheckoutRouteImport.update({
-  id: '/checkout',
-  path: '/checkout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CartRoute = CartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -103,9 +46,74 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KidsRoute = KidsRouteImport.update({
+  id: '/kids',
+  path: '/kids',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MenRoute = MenRouteImport.update({
+  id: '/men',
+  path: '/men',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewArrivalsRoute = NewArrivalsRouteImport.update({
+  id: '/new-arrivals',
+  path: '/new-arrivals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnapshotRoute = SnapshotRouteImport.update({
+  id: '/snapshot',
+  path: '/snapshot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WomenRoute = WomenRouteImport.update({
+  id: '/women',
+  path: '/women',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductIdRoute = ProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileIndexRoute = ProfileIndexRouteImport.update({
@@ -113,24 +121,9 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProfileRoute,
 } as any)
-const ProfileWishlistRoute = ProfileWishlistRouteImport.update({
-  id: '/wishlist',
-  path: '/wishlist',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const ProfilePaymentRoute = ProfilePaymentRouteImport.update({
-  id: '/payment',
-  path: '/payment',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const ProfilePasswordRoute = ProfilePasswordRouteImport.update({
-  id: '/password',
-  path: '/password',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const ProfileOrdersRoute = ProfileOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
+const ProfileAddressesRoute = ProfileAddressesRouteImport.update({
+  id: '/addresses',
+  path: '/addresses',
   getParentRoute: () => ProfileRoute,
 } as any)
 const ProfileEditRoute = ProfileEditRouteImport.update({
@@ -138,14 +131,39 @@ const ProfileEditRoute = ProfileEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => ProfileRoute,
 } as any)
-const ProfileAddressesRoute = ProfileAddressesRouteImport.update({
-  id: '/addresses',
-  path: '/addresses',
+const ProfileOrdersRoute = ProfileOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => ProfileRoute,
 } as any)
-const ProductIdRoute = ProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
+const ProfilePasswordRoute = ProfilePasswordRouteImport.update({
+  id: '/password',
+  path: '/password',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfilePaymentRoute = ProfilePaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileWishlistRoute = ProfileWishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ApiRazorpayCreateOrderRoute = ApiRazorpayCreateOrderRouteImport.update({
+  id: '/api/razorpay/create-order',
+  path: '/api/razorpay/create-order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRazorpayVerifyRoute = ApiRazorpayVerifyRouteImport.update({
+  id: '/api/razorpay/verify',
+  path: '/api/razorpay/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRazorpayWebhookRoute = ApiRazorpayWebhookRouteImport.update({
+  id: '/api/razorpay/webhook',
+  path: '/api/razorpay/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -173,6 +191,9 @@ export interface FileRoutesByFullPath {
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
   '/profile/': typeof ProfileIndexRoute
+  '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
+  '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
+  '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -197,6 +218,9 @@ export interface FileRoutesByTo {
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
   '/profile': typeof ProfileIndexRoute
+  '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
+  '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
+  '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -223,6 +247,9 @@ export interface FileRoutesById {
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
   '/profile/': typeof ProfileIndexRoute
+  '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
+  '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
+  '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -250,6 +277,9 @@ export interface FileRouteTypes {
     | '/profile/payment'
     | '/profile/wishlist'
     | '/profile/'
+    | '/api/razorpay/create-order'
+    | '/api/razorpay/verify'
+    | '/api/razorpay/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -274,6 +304,9 @@ export interface FileRouteTypes {
     | '/profile/payment'
     | '/profile/wishlist'
     | '/profile'
+    | '/api/razorpay/create-order'
+    | '/api/razorpay/verify'
+    | '/api/razorpay/webhook'
   id:
     | '__root__'
     | '/'
@@ -299,6 +332,9 @@ export interface FileRouteTypes {
     | '/profile/payment'
     | '/profile/wishlist'
     | '/profile/'
+    | '/api/razorpay/create-order'
+    | '/api/razorpay/verify'
+    | '/api/razorpay/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -318,99 +354,18 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   WomenRoute: typeof WomenRoute
   ProductIdRoute: typeof ProductIdRoute
+  ApiRazorpayCreateOrderRoute: typeof ApiRazorpayCreateOrderRoute
+  ApiRazorpayVerifyRoute: typeof ApiRazorpayVerifyRoute
+  ApiRazorpayWebhookRoute: typeof ApiRazorpayWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/women': {
-      id: '/women'
-      path: '/women'
-      fullPath: '/women'
-      preLoaderRoute: typeof WomenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/wishlist': {
-      id: '/wishlist'
-      path: '/wishlist'
-      fullPath: '/wishlist'
-      preLoaderRoute: typeof WishlistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/snapshot': {
-      id: '/snapshot'
-      path: '/snapshot'
-      fullPath: '/snapshot'
-      preLoaderRoute: typeof SnapshotRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/new-arrivals': {
-      id: '/new-arrivals'
-      path: '/new-arrivals'
-      fullPath: '/new-arrivals'
-      preLoaderRoute: typeof NewArrivalsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/men': {
-      id: '/men'
-      path: '/men'
-      fullPath: '/men'
-      preLoaderRoute: typeof MenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kids': {
-      id: '/kids'
-      path: '/kids'
-      fullPath: '/kids'
-      preLoaderRoute: typeof KidsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/checkout': {
-      id: '/checkout'
-      path: '/checkout'
-      fullPath: '/checkout'
-      preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cart': {
-      id: '/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof CartRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -420,11 +375,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kids': {
+      id: '/kids'
+      path: '/kids'
+      fullPath: '/kids'
+      preLoaderRoute: typeof KidsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/men': {
+      id: '/men'
+      path: '/men'
+      fullPath: '/men'
+      preLoaderRoute: typeof MenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new-arrivals': {
+      id: '/new-arrivals'
+      path: '/new-arrivals'
+      fullPath: '/new-arrivals'
+      preLoaderRoute: typeof NewArrivalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/snapshot': {
+      id: '/snapshot'
+      path: '/snapshot'
+      fullPath: '/snapshot'
+      preLoaderRoute: typeof SnapshotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wishlist': {
+      id: '/wishlist'
+      path: '/wishlist'
+      fullPath: '/wishlist'
+      preLoaderRoute: typeof WishlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/women': {
+      id: '/women'
+      path: '/women'
+      fullPath: '/women'
+      preLoaderRoute: typeof WomenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/product/$id': {
+      id: '/product/$id'
+      path: '/product/$id'
+      fullPath: '/product/$id'
+      preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile/': {
@@ -434,32 +480,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof ProfileRoute
     }
-    '/profile/wishlist': {
-      id: '/profile/wishlist'
-      path: '/wishlist'
-      fullPath: '/profile/wishlist'
-      preLoaderRoute: typeof ProfileWishlistRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/profile/payment': {
-      id: '/profile/payment'
-      path: '/payment'
-      fullPath: '/profile/payment'
-      preLoaderRoute: typeof ProfilePaymentRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/profile/password': {
-      id: '/profile/password'
-      path: '/password'
-      fullPath: '/profile/password'
-      preLoaderRoute: typeof ProfilePasswordRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/profile/orders': {
-      id: '/profile/orders'
-      path: '/orders'
-      fullPath: '/profile/orders'
-      preLoaderRoute: typeof ProfileOrdersRouteImport
+    '/profile/addresses': {
+      id: '/profile/addresses'
+      path: '/addresses'
+      fullPath: '/profile/addresses'
+      preLoaderRoute: typeof ProfileAddressesRouteImport
       parentRoute: typeof ProfileRoute
     }
     '/profile/edit': {
@@ -469,18 +494,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileEditRouteImport
       parentRoute: typeof ProfileRoute
     }
-    '/profile/addresses': {
-      id: '/profile/addresses'
-      path: '/addresses'
-      fullPath: '/profile/addresses'
-      preLoaderRoute: typeof ProfileAddressesRouteImport
+    '/profile/orders': {
+      id: '/profile/orders'
+      path: '/orders'
+      fullPath: '/profile/orders'
+      preLoaderRoute: typeof ProfileOrdersRouteImport
       parentRoute: typeof ProfileRoute
     }
-    '/product/$id': {
-      id: '/product/$id'
-      path: '/product/$id'
-      fullPath: '/product/$id'
-      preLoaderRoute: typeof ProductIdRouteImport
+    '/profile/password': {
+      id: '/profile/password'
+      path: '/password'
+      fullPath: '/profile/password'
+      preLoaderRoute: typeof ProfilePasswordRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/payment': {
+      id: '/profile/payment'
+      path: '/payment'
+      fullPath: '/profile/payment'
+      preLoaderRoute: typeof ProfilePaymentRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/wishlist': {
+      id: '/profile/wishlist'
+      path: '/wishlist'
+      fullPath: '/profile/wishlist'
+      preLoaderRoute: typeof ProfileWishlistRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/api/razorpay/create-order': {
+      id: '/api/razorpay/create-order'
+      path: '/api/razorpay/create-order'
+      fullPath: '/api/razorpay/create-order'
+      preLoaderRoute: typeof ApiRazorpayCreateOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/razorpay/verify': {
+      id: '/api/razorpay/verify'
+      path: '/api/razorpay/verify'
+      fullPath: '/api/razorpay/verify'
+      preLoaderRoute: typeof ApiRazorpayVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/razorpay/webhook': {
+      id: '/api/razorpay/webhook'
+      path: '/api/razorpay/webhook'
+      fullPath: '/api/razorpay/webhook'
+      preLoaderRoute: typeof ApiRazorpayWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -526,6 +586,9 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   WomenRoute: WomenRoute,
   ProductIdRoute: ProductIdRoute,
+  ApiRazorpayCreateOrderRoute: ApiRazorpayCreateOrderRoute,
+  ApiRazorpayVerifyRoute: ApiRazorpayVerifyRoute,
+  ApiRazorpayWebhookRoute: ApiRazorpayWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

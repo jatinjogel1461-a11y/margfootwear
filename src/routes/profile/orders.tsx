@@ -34,6 +34,8 @@ type Order = {
   total_amount: number;
   created_at: string;
   order_items: OrderItem[];
+  razorpay_order_id?: string | null;
+  razorpay_payment_id?: string | null;
 };
 
 function OrdersPage() {
@@ -62,6 +64,13 @@ function OrdersPage() {
     },
     enabled: !!user?.id,
     retry: 1,
+    select: (data: Order[]) => {
+      // Hide abandoned Razorpay orders (pending + has razorpay_order_id but no payment_id)
+      return data.filter(o => {
+        if (o.status === 'pending' && o.razorpay_order_id && !o.razorpay_payment_id) return false;
+        return true;
+      });
+    },
   });
 
   if (!user) return null;
