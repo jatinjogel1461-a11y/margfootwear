@@ -5,17 +5,15 @@ import { getProduct, products, formatINR, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, ShoppingBag, Zap, ArrowLeftRight } from "lucide-react";
+import { Star, ShoppingBag, Zap } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoeSpecs } from "@/components/ShoeSpecs";
 import { FindMySize } from "@/components/FindMySize";
 import {
-  COMPARE_OBJECTS,
   getDimensions,
   getReferenceSize,
   getSizeScaleRatios,
-  type CompareObjectId,
   type DimensionKey,
   type DimensionUnit,
 } from "@/lib/shoeDimensions";
@@ -56,7 +54,6 @@ function ProductPage() {
   const [unit, setUnit] = useState<DimensionUnit>("mm");
   const [showDimensions, setShowDimensions] = useState(false);
   const [highlightedDim, setHighlightedDim] = useState<DimensionKey | null>(null);
-  const [compareObject, setCompareObject] = useState<CompareObjectId>("none");
   const add = useCart((s) => s.add);
   const nav = useNavigate();
   const color = product.colors[colorIdx];
@@ -71,7 +68,6 @@ function ProductPage() {
     setQty(1);
     setShowDimensions(false);
     setHighlightedDim(null);
-    setCompareObject("none");
   }, [product.id, product.sizes]);
 
   useEffect(() => {
@@ -124,7 +120,6 @@ function ProductPage() {
             onShowDimensionsChange={setShowDimensions}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
-            compareObject={compareObject}
             referenceLengthMm={referenceLengthMm}
           />
         </motion.div>
@@ -155,36 +150,13 @@ function ProductPage() {
             }}
           />
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-2.5">
-            <div className="flex items-center gap-2.5 flex-1 min-w-[200px]">
-              <label
-                htmlFor="compare-object-select"
-                className="text-xs tracking-[0.2em] text-muted-foreground uppercase whitespace-nowrap"
-              >
-                Compare with
-              </label>
-              <select
-                id="compare-object-select"
-                value={compareObject}
-                onChange={(e) => setCompareObject(e.target.value as CompareObjectId)}
-                aria-label="Compare shoe with a real object"
-                className="min-h-[36px] flex-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs sm:text-sm text-foreground focus:outline-none focus:border-neon"
-              >
-                <option value="none">None</option>
-                {COMPARE_OBJECTS.map((obj) => (
-                  <option key={obj.id} value={obj.id}>
-                    {obj.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="mt-2.5">
             <Link
               to="/compare"
               search={{ a: product.id, sa: size }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-neon/50 bg-neon/10 px-3 py-1.5 text-xs font-semibold text-neon hover:bg-neon hover:text-neon-foreground transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neon"
+              className="inline-block text-xs text-muted-foreground hover:text-neon transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-neon rounded"
             >
-              <ArrowLeftRight className="h-3.5 w-3.5" />
-              Compare with another shoe
+              Compare with another shoe →
             </Link>
           </div>
 

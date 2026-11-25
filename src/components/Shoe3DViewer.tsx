@@ -13,12 +13,13 @@ import { LogoMark } from "./Logo";
 import { useIsMobile } from "../hooks/use-mobile";
 import { DimensionOverlay } from "./DimensionOverlay";
 import { CompareObject3D } from "./CompareObject3D";
-import type {
-  CompareObjectId,
-  DimensionKey,
-  DimensionUnit,
-  ShoeDimensions,
-  SizeScaleRatios,
+import {
+  COMPARE_OBJECTS,
+  type CompareObjectId,
+  type DimensionKey,
+  type DimensionUnit,
+  type ShoeDimensions,
+  type SizeScaleRatios,
 } from "../lib/shoeDimensions";
 
 // ---------------------------------------------------------------------------
@@ -377,8 +378,38 @@ export default function Shoe3DViewer({
   const [isResetting, setIsResetting] = useState(false);
   const [cameraGoal, setCameraGoal] = useState<"default" | "side">("default");
   const [internalShowDims, setInternalShowDims] = useState(false);
+  const [internalCompareObj, setInternalCompareObj] = useState<CompareObjectId>("none");
+  const [scaleMenuOpen, setScaleMenuOpen] = useState(false);
+  const scaleMenuRef = useRef<HTMLDivElement>(null);
   const autoBeforeDimsRef = useRef(true);
   const controlsRef = useRef<any>(null);
+
+  const activeCompareObj = compareObject !== "none" ? compareObject : internalCompareObj;
+
+  // Close scale popover when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!scaleMenuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (scaleMenuRef.current && !scaleMenuRef.current.contains(e.target as Node)) {
+        setScaleMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setScaleMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [scaleMenuOpen]);
+
+  // Reset scale object menu when model changes
+  useEffect(() => {
+    setInternalCompareObj("none");
+    setScaleMenuOpen(false);
+  }, [modelUrl]);
 
   const showDims = controlledShowDims ?? internalShowDims;
   const setShowDims = (next: boolean) => {
@@ -491,7 +522,7 @@ export default function Shoe3DViewer({
             showDimensions={showDims}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
-            compareObject={compareObject}
+            compareObject={activeCompareObj}
             referenceLengthMm={referenceLengthMm}
           />
           <ContactShadows
@@ -546,14 +577,79 @@ export default function Shoe3DViewer({
         )}
       </Canvas>
       {(showAutoRotateToggle || (showDimensionsToggle && dimensions)) && (
-        <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10">
+        <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-end gap-2 z-10 pointer-events-none">
+          {showDimensionsToggle && dimensions && (
+            <div ref={scaleMenuRef} className="relative pointer-events-auto">
+              {scaleMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Reference scale objects"
+                  className="absolute bottom-full right-0 mb-2 w-48 rounded-xl border border-border bg-background/95 backdrop-blur-md p-1.5 shadow-xl"
+                >
+                  {COMPARE_OBJECTS.map((obj) => {
+                    const selected = activeCompareObj === obj.id;
+                    return (
+                      <button
+                        key={obj.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={selected}
+                        onClick={() => {
+                          setInternalCompareObj(obj.id);
+                          setScaleMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neon ${
+                          selected
+                            ? "bg-[#ff6a00]/15 text-[#ff6a00] font-semibold"
+                            : "text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {obj.label}
+                      </button>
+                    );
+                  })}
+                  <div className="my-1 border-t border-border/60" />
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={activeCompareObj === "none"}
+                    onClick={() => {
+                      setInternalCompareObj("none");
+                      setScaleMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neon ${
+                      activeCompareObj === "none"
+                        ? "bg-[#ff6a00]/15 text-[#ff6a00] font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    None
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setScaleMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={scaleMenuOpen}
+                aria-label="Compare shoe scale with a real object"
+                className={`px-3 py-1.5 text-xs tracking-wider rounded-full transition ${
+                  activeCompareObj !== "none"
+                    ? "bg-[#ff6a00] text-neutral-950 border border-[#ff6a00] font-semibold shadow-sm"
+                    : "glass text-foreground hover:bg-neon hover:text-neon-foreground"
+                }`}
+              >
+                Scale
+              </button>
+            </div>
+          )}
           {showDimensionsToggle && dimensions && (
             <button
               type="button"
               onClick={toggleDims}
               aria-pressed={showDims}
               aria-label={showDims ? "Hide shoe dimensions" : "Show shoe dimensions"}
-              className={`px-3 py-1.5 text-xs tracking-wider rounded-full transition ${
+              className={`pointer-events-auto px-3 py-1.5 text-xs tracking-wider rounded-full transition ${
                 showDims
                   ? "bg-[#ff6a00] text-neutral-950 border border-[#ff6a00] font-semibold shadow-sm"
                   : "glass text-foreground hover:bg-neon hover:text-neon-foreground"
@@ -568,7 +664,7 @@ export default function Shoe3DViewer({
               onClick={() => setAuto((a) => !a)}
               aria-pressed={auto}
               aria-label={auto ? "Pause auto-rotation" : "Start auto-rotation"}
-              className="glass text-foreground px-3 py-1.5 text-xs tracking-wider rounded-full hover:bg-neon hover:text-neon-foreground transition"
+              className="pointer-events-auto glass text-foreground px-3 py-1.5 text-xs tracking-wider rounded-full hover:bg-neon hover:text-neon-foreground transition"
             >
               {auto ? "PAUSE" : "AUTO-ROTATE"}
             </button>
