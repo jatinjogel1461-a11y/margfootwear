@@ -42,6 +42,7 @@ export function Shoe3D({
   onScanProgress,
   highlightedDim = null,
   sizeScale,
+  onUserInteract,
 }: {
   color?: string;
   slug?: string;
@@ -60,6 +61,7 @@ export function Shoe3D({
   onScanProgress?: ScanProgressListener;
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
+  onUserInteract?: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // Only render or animate when the shoe is within 200px of the viewport
@@ -94,6 +96,7 @@ export function Shoe3D({
             onScanProgress={onScanProgress}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
+            onUserInteract={onUserInteract}
           />
         </Suspense>
       ) : (

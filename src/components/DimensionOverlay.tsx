@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
-// 3D Scanner Reveal: 3-phase laser sweep -> CAD wireframe cage + ruler ticks
+// 3D Scanner Reveal: 3-phase laser sweep -> lock-on flash -> CAD wireframe cage
 // Driven 100% via refs + useFrame (zero per-frame React state updates).
 // ---------------------------------------------------------------------------
 import { Html } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import {
@@ -44,6 +44,7 @@ const DUR_LENGTH = 1.6;
 const DUR_WIDTH = 1.2;
 const DUR_HEIGHT = 1.2;
 const TOTAL_SCAN_DUR = DUR_LENGTH + DUR_WIDTH + DUR_HEIGHT;
+const LOCK_ON_DUR = 0.4; // ~400 ms lock-on flash after phase 3
 const SIZE_TWEEN_DUR = 0.4;
 
 function easeInOutCubic(t: number): number {
@@ -65,9 +66,10 @@ export function DimensionOverlay({
 }: DimensionOverlayProps) {
   const rootRef = useRef<THREE.Group>(null!);
   const laserGroupRef = useRef<THREE.Group>(null!);
+  const { camera } = useThree();
   const isMobile = useIsMobile();
 
-  // Label DOM refs for zero-rerender text updates
+  // Label DOM refs for zero-rerender text & screen-space offset updates
   const labelWrapRefs = useRef<Record<DimensionKey, HTMLDivElement | null>>({
     length: null,
     width: null,
@@ -98,6 +100,7 @@ export function DimensionOverlay({
   // Scan state refs
   const scanTimeRef = useRef(0);
   const scanningRef = useRef(false);
+  const lockOnTimeRef = useRef(LOCK_ON_DUR);
   const lastTriggerRef = useRef(-1);
   const reducedMotionRef = useRef(false);
 
@@ -137,6 +140,7 @@ export function DimensionOverlay({
   useEffect(() => {
     if (!visible) {
       scanningRef.current = false;
+      lockOnTimeRef.current = LOCK_ON_DUR;
       onProgressRef.current?.({
         active: false,
         phase: "idle",
@@ -152,6 +156,7 @@ export function DimensionOverlay({
       if (reducedMotionRef.current) {
         scanTimeRef.current = TOTAL_SCAN_DUR;
         scanningRef.current = false;
+        lockOnTimeRef.current = LOCK_ON_DUR;
         onProgressRef.current?.({
           active: false,
           phase: "done",
@@ -162,6 +167,7 @@ export function DimensionOverlay({
       } else {
         scanTimeRef.current = 0;
         scanningRef.current = true;
+        lockOnTimeRef.current = 0;
       }
     }
   }, [visible, scanTrigger]);
@@ -178,7 +184,7 @@ export function DimensionOverlay({
     const cz = (box.min.z + box.max.z) / 2;
     const lengthIsX = sx >= sz;
     const maxDim = Math.max(sx, sy, sz);
-    const gap = maxDim * 0.14;
+    const gap = maxDim * 0.16;
 
     // 1. Wireframe bounding cage
     const boxGeo = new THREE.BoxGeometry(sx, sy, sz);
@@ -213,18 +219,18 @@ export function DimensionOverlay({
       : new THREE.Vector3(box.max.x + gap, box.min.y, box.max.z);
 
     const widStart = lengthIsX
-      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.5, box.min.z)
-      : new THREE.Vector3(box.min.x, box.min.y - gap * 0.5, box.min.z + sz * 0.78);
+      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.55, box.min.z)
+      : new THREE.Vector3(box.min.x, box.min.y - gap * 0.55, box.min.z + sz * 0.78);
     const widEnd = lengthIsX
-      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.5, box.max.z)
-      : new THREE.Vector3(box.max.x, box.min.y - gap * 0.5, box.min.z + sz * 0.78);
+      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.55, box.max.z)
+      : new THREE.Vector3(box.max.x, box.min.y - gap * 0.55, box.min.z + sz * 0.78);
 
     const heiStart = lengthIsX
-      ? new THREE.Vector3(box.min.x - gap * 0.75, box.min.y, cz)
-      : new THREE.Vector3(cx, box.min.y, box.min.z - gap * 0.75);
+      ? new THREE.Vector3(box.min.x - gap * 0.8, box.min.y, cz)
+      : new THREE.Vector3(cx, box.min.y, box.min.z - gap * 0.8);
     const heiEnd = lengthIsX
-      ? new THREE.Vector3(box.min.x - gap * 0.75, box.max.y, cz)
-      : new THREE.Vector3(cx, box.max.y, box.min.z - gap * 0.75);
+      ? new THREE.Vector3(box.min.x - gap * 0.8, box.max.y, cz)
+      : new THREE.Vector3(cx, box.max.y, box.min.z - gap * 0.8);
 
     const rulers: Record<DimensionKey, ReturnType<typeof createRuler>> = {
       length: createRuler(AXIS_TINTS.length, lenStart, lenEnd),
@@ -257,9 +263,6 @@ export function DimensionOverlay({
       });
       return { geom: g, mat: m };
     };
-
-    const tickShortDir = maxDim * 1; // unit dir passed below
-    void tickShortDir;
 
     const ticks: Record<DimensionKey, { geom: THREE.BufferGeometry; mat: THREE.LineBasicMaterial }> = {
       length: buildTicks(
@@ -305,11 +308,16 @@ export function DimensionOverlay({
       depthTest: false,
     });
 
-    // Label positions (offset along edges so they never overlap the model or each other)
+    // Label positions (offset along edges away from center)
+    const labelVecs: Record<DimensionKey, THREE.Vector3> = {
+      length: lenStart.clone().lerp(lenEnd, 0.34),
+      width: widStart.clone().lerp(widEnd, 0.88),
+      height: heiStart.clone().lerp(heiEnd, 0.55),
+    };
     const labelPos: Record<DimensionKey, [number, number, number]> = {
-      length: lenStart.clone().lerp(lenEnd, 0.34).toArray() as [number, number, number],
-      width: widStart.clone().lerp(widEnd, 0.88).toArray() as [number, number, number],
-      height: heiStart.clone().lerp(heiEnd, 0.55).toArray() as [number, number, number],
+      length: labelVecs.length.toArray() as [number, number, number],
+      width: labelVecs.width.toArray() as [number, number, number],
+      height: labelVecs.height.toArray() as [number, number, number],
     };
 
     return {
@@ -329,6 +337,7 @@ export function DimensionOverlay({
       laserPlaneMat,
       laserEdgeBase,
       laserEdgeMat,
+      labelVecs,
       labelPos,
     };
   }, [box, dims.length, dims.width, dims.height]);
@@ -360,8 +369,18 @@ export function DimensionOverlay({
     }
   }, [geo]);
 
-  // Reusable temp Vector3 for zero-allocation useFrame
+  // Reusable temp objects for zero-allocation useFrame
   const tmpVec = useMemo(() => new THREE.Vector3(), []);
+  const projVecs = useMemo(
+    () => ({
+      length: new THREE.Vector3(),
+      width: new THREE.Vector3(),
+      height: new THREE.Vector3(),
+    }),
+    [],
+  );
+  const baseCageColor = useMemo(() => new THREE.Color("#94a3b8"), []);
+  const flashCageColor = useMemo(() => new THREE.Color("#ff6a00"), []);
 
   useFrame(({ clock }, dt) => {
     if (!geo || !rootRef.current) return;
@@ -390,12 +409,15 @@ export function DimensionOverlay({
       );
     }
 
-    // 2. Advance 3-phase scan timer
+    // 2. Advance 3-phase scan timer + lock-on flash
     if (scanningRef.current) {
       scanTimeRef.current = Math.min(TOTAL_SCAN_DUR, scanTimeRef.current + dt);
       if (scanTimeRef.current >= TOTAL_SCAN_DUR) {
         scanningRef.current = false;
+        lockOnTimeRef.current = 0;
       }
+    } else if (lockOnTimeRef.current < LOCK_ON_DUR && !reducedMotionRef.current) {
+      lockOnTimeRef.current = Math.min(LOCK_ON_DUR, lockOnTimeRef.current + dt);
     }
 
     const elapsed = scanTimeRef.current;
@@ -468,7 +490,52 @@ export function DimensionOverlay({
       }
     }
 
-    // 4. Update ruler lines, ticks, pulse highlight, and label text/opacity
+    // 4. Cage opacity + lock-on flash pulse after phase 3
+    const cageProgress = reducedMotionRef.current
+      ? 1
+      : clamp01((elapsed - TOTAL_SCAN_DUR * 0.6) / (TOTAL_SCAN_DUR * 0.4));
+    let lockFlash = 0;
+    if (!scanningRef.current && lockOnTimeRef.current < LOCK_ON_DUR && !reducedMotionRef.current) {
+      lockFlash = Math.sin((lockOnTimeRef.current / LOCK_ON_DUR) * Math.PI);
+    }
+    geo.cageMat.opacity = 0.28 * cageProgress + 0.58 * lockFlash;
+    geo.cageMat.color.copy(baseCageColor).lerp(flashCageColor, lockFlash);
+
+    // 5. Screen-space label collision avoidance (nudge in px when two labels are too close)
+    const keys: DimensionKey[] = ["length", "width", "height"];
+    const nudges: Record<DimensionKey, { x: number; y: number }> = {
+      length: { x: 0, y: 0 },
+      width: { x: 0, y: 0 },
+      height: { x: 0, y: 0 },
+    };
+
+    keys.forEach((k) => {
+      projVecs[k].copy(geo.labelVecs[k]);
+      rootRef.current.localToWorld(projVecs[k]);
+      projVecs[k].project(camera);
+    });
+
+    const minDist = 0.22;
+    for (let i = 0; i < keys.length; i++) {
+      for (let j = i + 1; j < keys.length; j++) {
+        const a = keys[i];
+        const b = keys[j];
+        const dx = projVecs[b].x - projVecs[a].x;
+        const dy = projVecs[b].y - projVecs[a].y;
+        const d = Math.hypot(dx, dy);
+        if (d < minDist) {
+          const nx = d > 0.001 ? dx / d : 0;
+          const ny = d > 0.001 ? dy / d : 1;
+          const push = ((minDist - d) / minDist) * 18;
+          nudges[a].x -= nx * push;
+          nudges[a].y += ny * push;
+          nudges[b].x += nx * push;
+          nudges[b].y -= ny * push;
+        }
+      }
+    }
+
+    // 6. Update ruler lines, ticks, pulse highlight, and label text/opacity/nudge
     const progressByAxis: Record<DimensionKey, number> = {
       length: pLen,
       width: pWid,
@@ -478,11 +545,7 @@ export function DimensionOverlay({
     const hl = highlightedRef.current;
     const pulse = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 7);
 
-    // Cage fades in smoothly as scan finishes (or immediately on reduced motion)
-    const cageProgress = reducedMotionRef.current ? 1 : clamp01((elapsed - TOTAL_SCAN_DUR * 0.6) / (TOTAL_SCAN_DUR * 0.4));
-    geo.cageMat.opacity = 0.28 * cageProgress;
-
-    (["length", "width", "height"] as DimensionKey[]).forEach((key) => {
+    keys.forEach((key) => {
       const p = progressByAxis[key];
       const ruler = geo.rulers[key];
       const posAttr = ruler.geom.getAttribute("position") as THREE.BufferAttribute;
@@ -495,7 +558,8 @@ export function DimensionOverlay({
       const axisAlpha = (p > 0.01 ? 1 : 0) * (isDimmed ? 0.28 : isHl ? pulse : 0.95);
 
       ruler.mat.opacity = axisAlpha;
-      geo.ticks[key].mat.opacity = (p > 0.95 ? 0.75 : p * 0.5) * (isDimmed ? 0.28 : isHl ? pulse : 1);
+      geo.ticks[key].mat.opacity =
+        (p > 0.95 ? 0.75 : p * 0.5) * (isDimmed ? 0.28 : isHl ? pulse : 1);
 
       const textEl = labelTextRefs.current[key];
       if (textEl) {
@@ -507,13 +571,14 @@ export function DimensionOverlay({
       if (wrapEl) {
         wrapEl.style.opacity = p > 0.02 ? String(isDimmed ? 0.35 : 1) : "0";
         wrapEl.style.boxShadow = isHl ? `0 0 14px ${AXIS_TINTS[key]}` : "none";
+        wrapEl.style.transform = `translate(${nudges[key].x.toFixed(1)}px, ${nudges[key].y.toFixed(1)}px)`;
       }
     });
   });
 
   if (!geo) return null;
 
-  const fontSize = isMobile ? 10 : 11;
+  const fontSize = isMobile ? 9.5 : 11;
 
   return (
     <group ref={rootRef} visible={visible}>
@@ -550,7 +615,7 @@ export function DimensionOverlay({
                   fontWeight: 700,
                   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                   background: "rgba(12, 12, 16, 0.88)",
-                  padding: isMobile ? "2px 6px" : "3px 8px",
+                  padding: isMobile ? "2px 5px" : "3px 8px",
                   borderRadius: 6,
                   whiteSpace: "nowrap",
                   pointerEvents: "none",

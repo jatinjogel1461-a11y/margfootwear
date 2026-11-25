@@ -235,8 +235,12 @@ export function ShoeSpecs({
               onFocus={() => onHighlightDim(key)}
               onBlur={() => onHighlightDim(null)}
               onClick={() => {
-                onHighlightDim(key);
-                onSelectDim?.(key);
+                if (isHighlighted) {
+                  onHighlightDim(null);
+                } else {
+                  onHighlightDim(key);
+                  onSelectDim?.(key);
+                }
               }}
               aria-label={`${label}: ${value} (${short}). Click to inspect in 3D`}
               aria-pressed={isHighlighted}

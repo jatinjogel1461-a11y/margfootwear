@@ -45,6 +45,9 @@ export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
 });
 
+// In-memory record of products already auto-scanned during this page load
+const autoScannedProducts = new Set<string>();
+
 function ProductPage() {
   const { product } = Route.useLoaderData();
   const [colorIdx, setColorIdx] = useState(0);
@@ -55,6 +58,7 @@ function ProductPage() {
   const [scanTrigger, setScanTrigger] = useState(0);
   const [highlightedDim, setHighlightedDim] = useState<DimensionKey | null>(null);
   const scanListenersRef = useRef<Set<(snap: ScanProgressSnapshot) => void>>(new Set());
+  const viewerContainerRef = useRef<HTMLDivElement>(null);
   const add = useCart((s) => s.add);
   const nav = useNavigate();
   const color = product.colors[colorIdx];
@@ -81,9 +85,36 @@ function ProductPage() {
     setColorIdx(0);
     setSize(product.sizes[Math.floor(product.sizes.length / 2)]);
     setQty(1);
-    setShowDimensions(false);
+    setShowDimensions(autoScannedProducts.has(product.id));
     setHighlightedDim(null);
   }, [product.id, product.sizes]);
+
+  // Auto-scan once per product id on this page load when viewer enters viewport (threshold ~0.4)
+  useEffect(() => {
+    const el = viewerContainerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (autoScannedProducts.has(product.id)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+            if (!autoScannedProducts.has(product.id)) {
+              autoScannedProducts.add(product.id);
+              setShowDimensions(true);
+              setScanTrigger((t) => t + 1);
+            }
+            observer.disconnect();
+            break;
+          }
+        }
+      },
+      { threshold: 0.4 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [product.id]);
 
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
@@ -104,6 +135,7 @@ function ProductPage() {
     <PageShell>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 md:py-10 grid lg:grid-cols-2 gap-6 md:gap-10 items-start">
         <motion.div
+          ref={viewerContainerRef}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden"
@@ -121,6 +153,7 @@ function ProductPage() {
             onScanProgress={handleScanProgress}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
+            onUserInteract={() => setHighlightedDim(null)}
           />
         </motion.div>
 

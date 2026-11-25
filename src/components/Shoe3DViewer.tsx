@@ -11,7 +11,12 @@ import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { LogoMark } from "./Logo";
 import { useIsMobile } from "../hooks/use-mobile";
-import { DimensionOverlay, type ScanProgressListener } from "./DimensionOverlay";
+import {
+  AXIS_TINTS,
+  DimensionOverlay,
+  type ScanProgressListener,
+  type ScanProgressSnapshot,
+} from "./DimensionOverlay";
 import type {
   DimensionKey,
   DimensionUnit,
@@ -230,6 +235,61 @@ function SneakerModel({
     });
   }, [clonedScene, color, variant]);
 
+  // Hologram emissive tint during active laser sweep (cloned materials only)
+  const scanGlowRef = useRef<{ active: boolean; phase: DimensionKey | "done" | "idle"; progress: number }>({
+    active: false,
+    phase: "idle",
+    progress: 0,
+  });
+  const glowIntensityRef = useRef(0);
+  const glowColorObj = useMemo(() => new THREE.Color("#ff6a00"), []);
+
+  const handleInternalScanProgress = useMemo<ScanProgressListener>(() => {
+    return (snap: ScanProgressSnapshot) => {
+      const p =
+        snap.phase === "length"
+          ? snap.length
+          : snap.phase === "width"
+            ? snap.width
+            : snap.phase === "height"
+              ? snap.height
+              : 1;
+      scanGlowRef.current = { active: snap.active, phase: snap.phase, progress: p };
+      onScanProgress?.(snap);
+    };
+  }, [onScanProgress]);
+
+  useFrame((_, dt) => {
+    const sg = scanGlowRef.current;
+    const targetGlow =
+      sg.active && (sg.phase === "length" || sg.phase === "width" || sg.phase === "height")
+        ? 0.24 * Math.sin(sg.progress * Math.PI) + 0.08
+        : 0;
+
+    if (targetGlow > 0.001 || glowIntensityRef.current > 0.001) {
+      glowIntensityRef.current = THREE.MathUtils.lerp(
+        glowIntensityRef.current,
+        targetGlow,
+        Math.min(1, dt * 10),
+      );
+      if (sg.phase === "length" || sg.phase === "width" || sg.phase === "height") {
+        glowColorObj.set(AXIS_TINTS[sg.phase]);
+      }
+      clonedScene.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          mats.forEach((m) => {
+            if (m instanceof THREE.MeshStandardMaterial) {
+              m.emissive.copy(glowColorObj);
+              m.emissiveIntensity = glowIntensityRef.current;
+            }
+          });
+        }
+      });
+    }
+  });
+
   return (
     <group ref={group} position={fitTransform.offset} scale={fitTransform.scale}>
       <primitive object={clonedScene} />
@@ -241,7 +301,7 @@ function SneakerModel({
           visible={showDimensions}
           scanTrigger={scanTrigger}
           highlightedDim={highlightedDim}
-          onScanProgress={onScanProgress}
+          onScanProgress={handleInternalScanProgress}
         />
       )}
     </group>
@@ -277,24 +337,88 @@ function CameraController({
   setIsResetting,
   cameraGoal = "default",
   driftActive = false,
+  axisView = null,
 }: {
   controlsRef: React.MutableRefObject<any>;
   isResetting: boolean;
   setIsResetting: (v: boolean) => void;
   cameraGoal?: "default" | "side";
   driftActive?: boolean;
+  axisView?: DimensionKey | null;
 }) {
   const { camera } = useThree();
   const initialPos = useMemo(() => new THREE.Vector3(3.5, 1.8, 3.5), []);
-  const sidePos = useMemo(() => new THREE.Vector3(1.1, 0.75, 4.35), []);
+  const sidePos = useMemo(() => new THREE.Vector3(0.35, 0.7, 4.45), []);
+  const topPos = useMemo(() => new THREE.Vector3(0, 4.6, 0.35), []);
+  const frontPos = useMemo(() => new THREE.Vector3(4.35, 0.65, 0.35), []);
   const initialTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   const startPos = useRef(new THREE.Vector3());
   const startTarget = useRef(new THREE.Vector3());
   const progress = useRef(0);
 
+  // Axis camera tween refs (600ms ease, zero React state)
+  const savedPosRef = useRef<THREE.Vector3 | null>(null);
+  const savedTargetRef = useRef<THREE.Vector3 | null>(null);
+  const axisAnimActiveRef = useRef(false);
+  const axisAnimProgressRef = useRef(1);
+  const axisFromPosRef = useRef(new THREE.Vector3());
+  const axisToPosRef = useRef(new THREE.Vector3());
+  const axisFromTargetRef = useRef(new THREE.Vector3());
+  const axisToTargetRef = useRef(new THREE.Vector3());
+  const prevAxisRef = useRef<DimensionKey | null>(null);
+
+  useEffect(() => {
+    const prev = prevAxisRef.current;
+    if (axisView === prev) return;
+    prevAxisRef.current = axisView;
+
+    if (!controlsRef.current) return;
+
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (axisView !== null) {
+      // Save previous camera position only when entering axis view from null
+      if (prev === null) {
+        savedPosRef.current = camera.position.clone();
+        savedTargetRef.current = controlsRef.current.target.clone();
+      }
+      const targetVec =
+        axisView === "length" ? sidePos : axisView === "width" ? topPos : frontPos;
+
+      axisFromPosRef.current.copy(camera.position);
+      axisToPosRef.current.copy(targetVec);
+      axisFromTargetRef.current.copy(controlsRef.current.target);
+      axisToTargetRef.current.copy(initialTarget);
+    } else if (savedPosRef.current && savedTargetRef.current) {
+      // Returning to previous camera position on blur/mouseleave/untoggle
+      axisFromPosRef.current.copy(camera.position);
+      axisToPosRef.current.copy(savedPosRef.current);
+      axisFromTargetRef.current.copy(controlsRef.current.target);
+      axisToTargetRef.current.copy(savedTargetRef.current);
+      savedPosRef.current = null;
+      savedTargetRef.current = null;
+    } else {
+      return;
+    }
+
+    if (reduced) {
+      camera.position.copy(axisToPosRef.current);
+      controlsRef.current.target.copy(axisToTargetRef.current);
+      controlsRef.current.update();
+      axisAnimActiveRef.current = false;
+      axisAnimProgressRef.current = 1;
+    } else {
+      axisAnimActiveRef.current = true;
+      axisAnimProgressRef.current = 0;
+    }
+  }, [axisView, camera, controlsRef, sidePos, topPos, frontPos, initialTarget]);
+
   useEffect(() => {
     if (isResetting) {
+      axisAnimActiveRef.current = false;
       startPos.current.copy(camera.position);
       if (controlsRef.current) {
         startTarget.current.copy(controlsRef.current.target);
@@ -307,6 +431,22 @@ function CameraController({
   }, [isResetting, cameraGoal, camera, controlsRef]);
 
   useFrame(({ clock }, dt) => {
+    if (axisAnimActiveRef.current && controlsRef.current) {
+      axisAnimProgressRef.current = Math.min(1, axisAnimProgressRef.current + dt / 0.6);
+      const ease = 1 - Math.pow(1 - axisAnimProgressRef.current, 3);
+      camera.position.lerpVectors(axisFromPosRef.current, axisToPosRef.current, ease);
+      controlsRef.current.target.lerpVectors(
+        axisFromTargetRef.current,
+        axisToTargetRef.current,
+        ease,
+      );
+      controlsRef.current.update();
+      if (axisAnimProgressRef.current >= 1) {
+        axisAnimActiveRef.current = false;
+      }
+      return;
+    }
+
     if (isResetting && controlsRef.current) {
       // 750ms duration
       progress.current += dt / 0.75;
@@ -323,7 +463,7 @@ function CameraController({
       if (progress.current === 1) {
         setIsResetting(false);
       }
-    } else if (driftActive && controlsRef.current) {
+    } else if (driftActive && !axisView && controlsRef.current) {
       const reduced =
         typeof window !== "undefined" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -355,6 +495,7 @@ export default function Shoe3DViewer({
   onScanProgress,
   highlightedDim = null,
   sizeScale,
+  onUserInteract,
 }: {
   color?: string;
   interactive?: boolean;
@@ -372,6 +513,7 @@ export default function Shoe3DViewer({
   onScanProgress?: ScanProgressListener;
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
+  onUserInteract?: () => void;
 }) {
   const [auto, setAuto] = useState(!showAutoRotateToggle);
   const [isInteracting, setIsInteracting] = useState(false);
@@ -423,7 +565,9 @@ export default function Shoe3DViewer({
   };
 
   const isCard = !interactive && !showAutoRotateToggle;
-  const effectiveAutoRotate = interactive ? (auto && !isInteracting && !isResetting) : true;
+  const effectiveAutoRotate = interactive
+    ? auto && !isInteracting && !isResetting && !highlightedDim
+    : true;
 
   const isMobile = useIsMobile();
   const touchStateRef = useRef({ x: 0, y: 0, isDecided: false });
@@ -538,12 +682,13 @@ export default function Shoe3DViewer({
               }}
               minDistance={2.5}
               maxDistance={7}
-              minPolarAngle={Math.PI / 6}
+              minPolarAngle={highlightedDim === "width" ? 0.05 : Math.PI / 6}
               maxPolarAngle={Math.PI / 2}
               onStart={() => {
                 setIsInteracting(true);
                 setIsResetting(false);
                 if (showAutoRotateToggle) setAuto(false);
+                onUserInteract?.();
               }}
               onEnd={() => {
                 setIsInteracting(false);
@@ -559,6 +704,7 @@ export default function Shoe3DViewer({
               setIsResetting={setIsResetting}
               cameraGoal={cameraGoal}
               driftActive={showDims && !isInteracting}
+              axisView={highlightedDim}
             />
           </>
         )}
