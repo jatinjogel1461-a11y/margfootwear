@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 import { Star, ShoppingBag, Zap } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
+import { ShoeSpecs } from "@/components/ShoeSpecs";
+import { getDimensions, type DimensionKey, type DimensionUnit } from "@/lib/shoeDimensions";
 
 export const Route = createFileRoute("/product/$id")({
   loader: ({ params }): { product: Product } => {
@@ -42,9 +44,13 @@ function ProductPage() {
   const [colorIdx, setColorIdx] = useState(0);
   const [size, setSize] = useState(product.sizes[Math.floor(product.sizes.length / 2)]);
   const [qty, setQty] = useState(1);
+  const [unit, setUnit] = useState<DimensionUnit>("mm");
+  const [showDimensions, setShowDimensions] = useState(false);
+  const [highlightedDim, setHighlightedDim] = useState<DimensionKey | null>(null);
   const add = useCart((s) => s.add);
   const nav = useNavigate();
   const color = product.colors[colorIdx];
+  const dimensions = getDimensions(product, size);
 
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
@@ -65,7 +71,17 @@ function ProductPage() {
     <PageShell>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 md:py-10 grid lg:grid-cols-2 gap-6 md:gap-10">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden">
-          <Shoe3D color={color.hex} slug={product.id} showAutoRotateToggle />
+          <Shoe3D
+            color={color.hex}
+            slug={product.id}
+            showAutoRotateToggle
+            showDimensionsToggle
+            dimensions={dimensions}
+            dimensionUnit={unit}
+            showDimensions={showDimensions}
+            onShowDimensionsChange={setShowDimensions}
+            highlightedDim={highlightedDim}
+          />
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -81,6 +97,18 @@ function ProductPage() {
           </div>
 
           <p className="mt-6 text-3xl font-bold">{formatINR(product.price * qty)}</p>
+
+          <ShoeSpecs
+            dimensions={dimensions}
+            unit={unit}
+            onUnitChange={setUnit}
+            highlightedDim={highlightedDim}
+            onHighlightDim={setHighlightedDim}
+            onSelectDim={(dim) => {
+              setShowDimensions(true);
+              setHighlightedDim(dim);
+            }}
+          />
 
           <p className="mt-5 text-muted-foreground leading-relaxed">{product.description}</p>
 

@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef, useState, useEffect } from "react";
 import { useInView } from "framer-motion";
 import { LogoMark } from "./Logo";
 import { getShoeVariant } from "../lib/shoeModels";
+import type { DimensionKey, DimensionUnit, ShoeDimensions } from "../lib/shoeDimensions";
 
 // Lazy load the heavy Three.js viewer component
 const Shoe3DViewer = lazy(() => import("./Shoe3DViewer"));
@@ -26,6 +27,12 @@ export function Shoe3D({
   enableZoom = true,
   unmountOutOfView = false,
   fallbackNode,
+  dimensions,
+  dimensionUnit = "mm",
+  showDimensionsToggle = false,
+  showDimensions,
+  onShowDimensionsChange,
+  highlightedDim = null,
 }: {
   color?: string;
   slug?: string;
@@ -35,6 +42,12 @@ export function Shoe3D({
   enableZoom?: boolean;
   unmountOutOfView?: boolean;
   fallbackNode?: React.ReactNode;
+  dimensions?: ShoeDimensions;
+  dimensionUnit?: DimensionUnit;
+  showDimensionsToggle?: boolean;
+  showDimensions?: boolean;
+  onShowDimensionsChange?: (v: boolean) => void;
+  highlightedDim?: DimensionKey | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // Only render or animate when the shoe is within 200px of the viewport
@@ -60,6 +73,12 @@ export function Shoe3D({
             enableZoom={enableZoom}
             modelUrl={modelUrl}
             variant={variant}
+            dimensions={dimensions}
+            dimensionUnit={dimensionUnit}
+            showDimensionsToggle={showDimensionsToggle}
+            showDimensions={showDimensions}
+            onShowDimensionsChange={onShowDimensionsChange}
+            highlightedDim={highlightedDim}
           />
         </Suspense>
       ) : (

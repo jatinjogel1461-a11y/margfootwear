@@ -11,6 +11,8 @@ import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { LogoMark } from "./Logo";
 import { useIsMobile } from "../hooks/use-mobile";
+import { DimensionOverlay } from "./DimensionOverlay";
+import type { DimensionKey, DimensionUnit, ShoeDimensions } from "../lib/shoeDimensions";
 
 // ---------------------------------------------------------------------------
 // Single shared GLTF model path
@@ -26,12 +28,20 @@ function SneakerModel({
   isResetting,
   modelUrl = FALLBACK_SHOE_MODEL,
   variant,
+  dimensions,
+  dimensionUnit = "mm",
+  showDimensions = false,
+  highlightedDim = null,
 }: {
   color: string;
   autoRotate: boolean;
   isResetting?: boolean;
   modelUrl?: string;
   variant?: { tint: string | null; rotateY: number; name?: string };
+  dimensions?: ShoeDimensions;
+  dimensionUnit?: DimensionUnit;
+  showDimensions?: boolean;
+  highlightedDim?: DimensionKey | null;
 }) {
   const { scene } = useGLTF(modelUrl);
   const group = useRef<THREE.Group>(null!);
@@ -99,6 +109,7 @@ function SneakerModel({
     return {
       scale: s,
       offset: [-center.x * s, yOffset - 0.35, -center.z * s] as [number, number, number],
+      box,
     };
   }, [clonedScene]);
 
@@ -144,6 +155,15 @@ function SneakerModel({
   return (
     <group ref={group} position={fitTransform.offset} scale={fitTransform.scale}>
       <primitive object={clonedScene} />
+      {dimensions && (
+        <DimensionOverlay
+          box={fitTransform.box}
+          dims={dimensions}
+          unit={dimensionUnit}
+          visible={showDimensions}
+          highlightedDim={highlightedDim}
+        />
+      )}
     </group>
   );
 }
@@ -175,13 +195,16 @@ function CameraController({
   controlsRef,
   isResetting,
   setIsResetting,
+  cameraGoal = "default",
 }: {
   controlsRef: React.MutableRefObject<any>;
   isResetting: boolean;
   setIsResetting: (v: boolean) => void;
+  cameraGoal?: "default" | "side";
 }) {
   const { camera } = useThree();
   const initialPos = useMemo(() => new THREE.Vector3(3.5, 1.8, 3.5), []);
+  const sidePos = useMemo(() => new THREE.Vector3(1.1, 0.75, 4.35), []);
   const initialTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   const startPos = useRef(new THREE.Vector3());
@@ -194,9 +217,12 @@ function CameraController({
       if (controlsRef.current) {
         startTarget.current.copy(controlsRef.current.target);
       }
-      progress.current = 0;
+      const reduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      progress.current = reduced ? 1 : 0;
     }
-  }, [isResetting, camera, controlsRef]);
+  }, [isResetting, cameraGoal, camera, controlsRef]);
 
   useFrame((_, dt) => {
     if (isResetting && controlsRef.current) {
@@ -206,8 +232,9 @@ function CameraController({
 
       // easeOutCubic
       const ease = 1 - Math.pow(1 - progress.current, 3);
+      const goalPos = cameraGoal === "side" ? sidePos : initialPos;
 
-      camera.position.lerpVectors(startPos.current, initialPos, ease);
+      camera.position.lerpVectors(startPos.current, goalPos, ease);
       controlsRef.current.target.lerpVectors(startTarget.current, initialTarget, ease);
       controlsRef.current.update();
 
@@ -228,6 +255,12 @@ export default function Shoe3DViewer({
   enableZoom = true,
   modelUrl,
   variant,
+  dimensions,
+  dimensionUnit = "mm",
+  showDimensionsToggle = false,
+  showDimensions: controlledShowDims,
+  onShowDimensionsChange,
+  highlightedDim = null,
 }: {
   color?: string;
   interactive?: boolean;
@@ -236,11 +269,45 @@ export default function Shoe3DViewer({
   enableZoom?: boolean;
   modelUrl?: string;
   variant?: { tint: string | null; rotateY: number; name?: string };
+  dimensions?: ShoeDimensions;
+  dimensionUnit?: DimensionUnit;
+  showDimensionsToggle?: boolean;
+  showDimensions?: boolean;
+  onShowDimensionsChange?: (v: boolean) => void;
+  highlightedDim?: DimensionKey | null;
 }) {
   const [auto, setAuto] = useState(!showAutoRotateToggle);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [cameraGoal, setCameraGoal] = useState<"default" | "side">("default");
+  const [internalShowDims, setInternalShowDims] = useState(false);
+  const autoBeforeDimsRef = useRef(true);
   const controlsRef = useRef<any>(null);
+
+  const showDims = controlledShowDims ?? internalShowDims;
+  const setShowDims = (next: boolean) => {
+    if (onShowDimensionsChange) onShowDimensionsChange(next);
+    else setInternalShowDims(next);
+  };
+
+  // Sync side-view ease + auto-rotate pause whenever showDims turns ON externally
+  const prevShowDimsRef = useRef(showDims);
+  useEffect(() => {
+    if (showDims && !prevShowDimsRef.current) {
+      autoBeforeDimsRef.current = auto;
+      setAuto(false);
+      setCameraGoal("side");
+      setIsResetting(true);
+    } else if (!showDims && prevShowDimsRef.current) {
+      setAuto(autoBeforeDimsRef.current);
+      setCameraGoal("default");
+    }
+    prevShowDimsRef.current = showDims;
+  }, [showDims, auto]);
+
+  const toggleDims = () => {
+    setShowDims(!showDims);
+  };
 
   const isCard = !interactive && !showAutoRotateToggle;
   const effectiveAutoRotate = interactive ? (auto && !isInteracting && !isResetting) : true;
@@ -317,7 +384,17 @@ export default function Shoe3DViewer({
         <spotLight position={[0, 8, 0]} angle={0.4} penumbra={0.8} intensity={0.5} color="#ffffff" />
 
         <Suspense fallback={<Loader />}>
-          <SneakerModel color={color} autoRotate={effectiveAutoRotate} isResetting={isResetting} modelUrl={modelUrl} variant={variant} />
+          <SneakerModel
+            color={color}
+            autoRotate={effectiveAutoRotate}
+            isResetting={isResetting}
+            modelUrl={modelUrl}
+            variant={variant}
+            dimensions={dimensions}
+            dimensionUnit={dimensionUnit}
+            showDimensions={showDims}
+            highlightedDim={highlightedDim}
+          />
           <ContactShadows
             position={[0, -0.55, 0]}
             opacity={0.7}
@@ -354,24 +431,50 @@ export default function Shoe3DViewer({
               }}
               onEnd={() => {
                 setIsInteracting(false);
-                setIsResetting(true);
+                if (!showDims) {
+                  setCameraGoal("default");
+                  setIsResetting(true);
+                }
               }}
             />
             <CameraController
               controlsRef={controlsRef}
               isResetting={isResetting}
               setIsResetting={setIsResetting}
+              cameraGoal={cameraGoal}
             />
           </>
         )}
       </Canvas>
-      {showAutoRotateToggle && (
-        <button
-          onClick={() => setAuto((a) => !a)}
-          className="absolute bottom-3 right-3 glass px-3 py-1.5 text-xs tracking-wider rounded-full hover:bg-neon hover:text-neon-foreground transition"
-        >
-          {auto ? "PAUSE" : "AUTO-ROTATE"}
-        </button>
+      {(showAutoRotateToggle || (showDimensionsToggle && dimensions)) && (
+        <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10">
+          {showDimensionsToggle && dimensions && (
+            <button
+              type="button"
+              onClick={toggleDims}
+              aria-pressed={showDims}
+              aria-label={showDims ? "Hide shoe dimensions" : "Show shoe dimensions"}
+              className={`glass px-3 py-1.5 text-xs tracking-wider rounded-full transition ${
+                showDims
+                  ? "bg-neon text-neon-foreground font-semibold"
+                  : "hover:bg-neon hover:text-neon-foreground"
+              }`}
+            >
+              Dimensions
+            </button>
+          )}
+          {showAutoRotateToggle && (
+            <button
+              type="button"
+              onClick={() => setAuto((a) => !a)}
+              aria-pressed={auto}
+              aria-label={auto ? "Pause auto-rotation" : "Start auto-rotation"}
+              className="glass px-3 py-1.5 text-xs tracking-wider rounded-full hover:bg-neon hover:text-neon-foreground transition"
+            >
+              {auto ? "PAUSE" : "AUTO-ROTATE"}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
