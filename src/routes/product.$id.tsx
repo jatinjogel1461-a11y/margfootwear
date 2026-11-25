@@ -5,7 +5,7 @@ import { getProduct, products, formatINR, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, ShoppingBag, Zap } from "lucide-react";
+import { Star, ShoppingBag, Zap, ArrowLeftRight } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoeSpecs } from "@/components/ShoeSpecs";
@@ -74,6 +74,26 @@ function ProductPage() {
     setCompareObject("none");
   }, [product.id, product.sizes]);
 
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("marg-dim-unit");
+      if (saved === "mm" || saved === "cm" || saved === "in") {
+        setUnit(saved);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleUnitChange = (u: DimensionUnit) => {
+    setUnit(u);
+    try {
+      window.localStorage.setItem("marg-dim-unit", u);
+    } catch {
+      // ignore
+    }
+  };
+
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
   const onAdd = (buyNow = false) => {
@@ -126,7 +146,7 @@ function ProductPage() {
           <ShoeSpecs
             dimensions={dimensions}
             unit={unit}
-            onUnitChange={setUnit}
+            onUnitChange={handleUnitChange}
             highlightedDim={highlightedDim}
             onHighlightDim={setHighlightedDim}
             onSelectDim={(dim) => {
@@ -135,27 +155,37 @@ function ProductPage() {
             }}
           />
 
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5">
-            <label
-              htmlFor="compare-object-select"
-              className="text-xs tracking-[0.2em] text-muted-foreground uppercase whitespace-nowrap"
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-2.5">
+            <div className="flex items-center gap-2.5 flex-1 min-w-[200px]">
+              <label
+                htmlFor="compare-object-select"
+                className="text-xs tracking-[0.2em] text-muted-foreground uppercase whitespace-nowrap"
+              >
+                Compare with
+              </label>
+              <select
+                id="compare-object-select"
+                value={compareObject}
+                onChange={(e) => setCompareObject(e.target.value as CompareObjectId)}
+                aria-label="Compare shoe with a real object"
+                className="min-h-[36px] flex-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs sm:text-sm text-foreground focus:outline-none focus:border-neon"
+              >
+                <option value="none">None</option>
+                {COMPARE_OBJECTS.map((obj) => (
+                  <option key={obj.id} value={obj.id}>
+                    {obj.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Link
+              to="/compare"
+              search={{ a: product.id, sa: size }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-neon/50 bg-neon/10 px-3 py-1.5 text-xs font-semibold text-neon hover:bg-neon hover:text-neon-foreground transition focus:outline-none focus-visible:ring-2 focus-visible:ring-neon"
             >
-              Compare with
-            </label>
-            <select
-              id="compare-object-select"
-              value={compareObject}
-              onChange={(e) => setCompareObject(e.target.value as CompareObjectId)}
-              aria-label="Compare shoe with a real object"
-              className="min-h-[36px] rounded-md border border-border bg-background px-2.5 py-1 text-xs sm:text-sm text-foreground focus:outline-none focus:border-neon"
-            >
-              <option value="none">None</option>
-              {COMPARE_OBJECTS.map((obj) => (
-                <option key={obj.id} value={obj.id}>
-                  {obj.label}
-                </option>
-              ))}
-            </select>
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Compare with another shoe
+            </Link>
           </div>
 
           <FindMySize

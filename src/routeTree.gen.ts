@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as KidsRouteImport } from './routes/kids'
@@ -54,6 +55,11 @@ const CartRoute = CartRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/kids': typeof KidsRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/kids': typeof KidsRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/compare': typeof CompareRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/kids': typeof KidsRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/cart'
     | '/checkout'
+    | '/compare'
     | '/contact'
     | '/forgot-password'
     | '/kids'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/cart'
     | '/checkout'
+    | '/compare'
     | '/contact'
     | '/forgot-password'
     | '/kids'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/cart'
     | '/checkout'
+    | '/compare'
     | '/contact'
     | '/forgot-password'
     | '/kids'
@@ -342,6 +354,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
+  CompareRoute: typeof CompareRoute
   ContactRoute: typeof ContactRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   KidsRoute: typeof KidsRoute
@@ -387,6 +400,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -574,6 +594,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
+  CompareRoute: CompareRoute,
   ContactRoute: ContactRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   KidsRoute: KidsRoute,
