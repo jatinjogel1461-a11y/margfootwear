@@ -202,13 +202,11 @@ export function ShoeSpecs({
                   onClick={() => onUnitChange(u)}
                   aria-pressed={active}
                   aria-label={`Show dimensions in ${u}`}
-                  className={`px-2.5 py-0.5 text-[11px] font-mono rounded-full ${
-                    prefersReducedMotion ? "" : "transition-colors"
-                  } ${
-                    active
+                  className={`px-2.5 py-0.5 text-[11px] font-mono rounded-full ${prefersReducedMotion ? "" : "transition-colors"
+                    } ${active
                       ? "bg-neon text-neon-foreground font-semibold"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {u}
                 </button>
@@ -249,11 +247,9 @@ export function ShoeSpecs({
                   ? { borderColor: tint, boxShadow: `0 0 18px ${tint}44` }
                   : undefined
               }
-              className={`group text-left rounded-xl border px-3 py-2.5 min-h-[44px] bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-neon ${
-                prefersReducedMotion ? "" : "transition-colors duration-150"
-              } ${
-                isHighlighted ? "bg-secondary/60" : "border-border hover:border-foreground/30"
-              }`}
+              className={`group text-left rounded-xl border px-3 py-2.5 min-h-[44px] bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-neon ${prefersReducedMotion ? "" : "transition-colors duration-150"
+                } ${isHighlighted ? "bg-secondary/60" : "border-border hover:border-foreground/30"
+                }`}
             >
               <div className="flex items-center justify-between gap-1.5">
                 <span className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground group-hover:text-foreground">
