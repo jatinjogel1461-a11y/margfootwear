@@ -168,10 +168,13 @@ export interface SizeFitEntry {
   tag: FitTag;
 }
 
+export type FitStatus = "fit" | "too-short" | "too-long";
+
 export interface SizeRecommendation {
   recommendedSize: number | null;
   snugAlternative: number | null;
   entries: SizeFitEntry[];
+  fitStatus: FitStatus;
   outOfRange: boolean;
 }
 
@@ -190,7 +193,7 @@ export function recommendSize(product: Product, footLengthCm: number): SizeRecom
     let tag: FitTag;
     if (toeRoomMm < 10) {
       tag = "Snug";
-    } else if (toeRoomMm <= 18) {
+    } else if (toeRoomMm <= 18.5) {
       tag = "Perfect";
     } else {
       tag = "Loose";
@@ -198,18 +201,38 @@ export function recommendSize(product: Product, footLengthCm: number): SizeRecom
     return { size, innerLengthMm, toeRoomMm, tag };
   });
 
-  // Smallest size where innerLength >= footMm + 10
-  const fit = entries.find((e) => e.toeRoomMm >= 10) ?? null;
-
-  // Check if foot is way too small even for the smallest size (> 35 mm extra toe room)
   const smallest = entries[0];
-  const outOfRange = !fit || (smallest && fit.size === smallest.size && smallest.toeRoomMm > 35);
+  const largest = entries[entries.length - 1];
 
-  if (outOfRange) {
+  if (!smallest || !largest) {
     return {
       recommendedSize: null,
       snugAlternative: null,
       entries,
+      fitStatus: "too-long",
+      outOfRange: true,
+    };
+  }
+
+  // Longer than largest available comfortable fit
+  const fit = entries.find((e) => e.toeRoomMm >= 10) ?? null;
+  if (!fit) {
+    return {
+      recommendedSize: largest.size,
+      snugAlternative: null,
+      entries,
+      fitStatus: "too-long",
+      outOfRange: true,
+    };
+  }
+
+  // Shorter than smallest available comfortable fit (even smallest feels loose)
+  if (fit.size === smallest.size && smallest.toeRoomMm > 18.5) {
+    return {
+      recommendedSize: smallest.size,
+      snugAlternative: null,
+      entries,
+      fitStatus: "too-short",
       outOfRange: true,
     };
   }
@@ -223,6 +246,7 @@ export function recommendSize(product: Product, footLengthCm: number): SizeRecom
     recommendedSize: fit.size,
     snugAlternative,
     entries,
+    fitStatus: "fit",
     outOfRange: false,
   };
 }

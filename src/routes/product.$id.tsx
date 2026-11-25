@@ -107,8 +107,13 @@ function ProductPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 md:py-10 grid lg:grid-cols-2 gap-6 md:gap-10">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-x-10 lg:gap-y-6 lg:items-start">
+        {/* 1. 3D Viewer: Mobile order 1 | Desktop col 1, row 1 */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="order-1 lg:order-none lg:col-start-1 lg:row-start-1 relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden"
+        >
           <Shoe3D
             color={color.hex}
             slug={product.id}
@@ -124,7 +129,13 @@ function ProductPage() {
           />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        {/* 2. Buy Box: Mobile order 2 | Desktop col 2, sticky */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-1"
+        >
           <p className="text-xs tracking-[0.3em] text-neon">{product.sub.toUpperCase()}</p>
           <h1 className="mt-2 text-4xl md:text-5xl font-display font-bold">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
@@ -137,34 +148,6 @@ function ProductPage() {
           </div>
 
           <p className="mt-6 text-3xl font-bold">{formatINR(product.price * qty)}</p>
-
-          <ShoeSpecs
-            dimensions={dimensions}
-            unit={unit}
-            onUnitChange={handleUnitChange}
-            highlightedDim={highlightedDim}
-            onHighlightDim={setHighlightedDim}
-            onSelectDim={(dim) => {
-              setShowDimensions(true);
-              setHighlightedDim(dim);
-            }}
-          />
-
-          <div className="mt-2.5">
-            <Link
-              to="/compare"
-              search={{ a: product.id, sa: size }}
-              className="inline-block text-xs text-muted-foreground hover:text-neon transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-neon rounded"
-            >
-              Compare with another shoe →
-            </Link>
-          </div>
-
-          <FindMySize
-            product={product}
-            selectedSize={size}
-            onSelectSize={setSize}
-          />
 
           <p className="mt-5 text-muted-foreground leading-relaxed">{product.description}</p>
 
@@ -221,6 +204,37 @@ function ProductPage() {
             </motion.button>
           </div>
         </motion.div>
+
+        {/* 3. Dimensions, Compare Link & Find My Size: Mobile order 3 | Desktop col 1, row 2 */}
+        <div className="order-3 lg:order-none lg:col-start-1 lg:row-start-2">
+          <ShoeSpecs
+            dimensions={dimensions}
+            unit={unit}
+            onUnitChange={handleUnitChange}
+            highlightedDim={highlightedDim}
+            onHighlightDim={setHighlightedDim}
+            onSelectDim={(dim) => {
+              setShowDimensions(true);
+              setHighlightedDim(dim);
+            }}
+          />
+
+          <div className="mt-2.5">
+            <Link
+              to="/compare"
+              search={{ a: product.id, sa: size }}
+              className="inline-block text-xs text-muted-foreground hover:text-neon transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-neon rounded"
+            >
+              Compare with another shoe →
+            </Link>
+          </div>
+
+          <FindMySize
+            product={product}
+            selectedSize={size}
+            onSelectSize={setSize}
+          />
+        </div>
       </div>
 
       {/* Reviews */}

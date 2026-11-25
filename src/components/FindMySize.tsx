@@ -402,7 +402,15 @@ export function FindMySize({ product, selectedSize, onSelectSize }: FindMySizePr
       {/* Recommendation + Select size action */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <div className="text-xs sm:text-sm">
-          {rec.outOfRange ? (
+          {rec.fitStatus === "too-short" && rec.recommendedSize !== null ? (
+            <span className="text-amber-400 font-medium">
+              UK {rec.recommendedSize} is the smallest available and will feel loose ({Math.round(activeEntry?.toeRoomMm ?? 0)} mm toe room)
+            </span>
+          ) : rec.fitStatus === "too-long" && rec.recommendedSize !== null ? (
+            <span className="text-amber-400 font-medium">
+              UK {rec.recommendedSize} is the largest available and may feel tight
+            </span>
+          ) : rec.recommendedSize === null ? (
             <span className="text-amber-400 font-medium">Outside available sizes</span>
           ) : (
             <div className="space-y-0.5">
@@ -421,7 +429,7 @@ export function FindMySize({ product, selectedSize, onSelectSize }: FindMySizePr
           )}
         </div>
 
-        {!rec.outOfRange && rec.recommendedSize !== null && (
+        {rec.recommendedSize !== null && (
           <button
             type="button"
             onClick={() => onSelectSize(rec.recommendedSize!)}
