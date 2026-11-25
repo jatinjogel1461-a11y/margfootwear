@@ -3,12 +3,13 @@ import { PageShell } from "@/components/PageShell";
 import { Shoe3D } from "@/components/Shoe3D";
 import { getProduct, products, formatINR, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Star, ShoppingBag, Zap } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoeSpecs } from "@/components/ShoeSpecs";
+import type { ScanProgressSnapshot } from "@/components/DimensionOverlay";
 import {
   getDimensions,
   getSizeScaleRatios,
@@ -51,12 +52,30 @@ function ProductPage() {
   const [qty, setQty] = useState(1);
   const [unit, setUnit] = useState<DimensionUnit>("mm");
   const [showDimensions, setShowDimensions] = useState(false);
+  const [scanTrigger, setScanTrigger] = useState(0);
   const [highlightedDim, setHighlightedDim] = useState<DimensionKey | null>(null);
+  const scanListenersRef = useRef<Set<(snap: ScanProgressSnapshot) => void>>(new Set());
   const add = useCart((s) => s.add);
   const nav = useNavigate();
   const color = product.colors[colorIdx];
   const dimensions = getDimensions(product, size);
   const sizeScale = getSizeScaleRatios(product, size);
+
+  const handleScanProgress = useCallback((snap: ScanProgressSnapshot) => {
+    scanListenersRef.current.forEach((fn) => fn(snap));
+  }, []);
+
+  const subscribeScan = useCallback((fn: (snap: ScanProgressSnapshot) => void) => {
+    scanListenersRef.current.add(fn);
+    return () => {
+      scanListenersRef.current.delete(fn);
+    };
+  }, []);
+
+  const handleRescan = useCallback(() => {
+    setShowDimensions(true);
+    setScanTrigger((t) => t + 1);
+  }, []);
 
   useEffect(() => {
     setColorIdx(0);
@@ -98,6 +117,8 @@ function ProductPage() {
             dimensionUnit={unit}
             showDimensions={showDimensions}
             onShowDimensionsChange={setShowDimensions}
+            scanTrigger={scanTrigger}
+            onScanProgress={handleScanProgress}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
           />
@@ -123,6 +144,8 @@ function ProductPage() {
             onUnitChange={setUnit}
             highlightedDim={highlightedDim}
             onHighlightDim={setHighlightedDim}
+            onRescan={handleRescan}
+            subscribeScan={subscribeScan}
             onSelectDim={(dim) => {
               setShowDimensions(true);
               setHighlightedDim(dim);

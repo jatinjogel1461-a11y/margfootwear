@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef, useState, useEffect } from "react";
 import { useInView } from "framer-motion";
 import { LogoMark } from "./Logo";
 import { getShoeVariant } from "../lib/shoeModels";
+import type { ScanProgressListener } from "./DimensionOverlay";
 import type {
   DimensionKey,
   DimensionUnit,
@@ -37,6 +38,8 @@ export function Shoe3D({
   showDimensionsToggle = false,
   showDimensions,
   onShowDimensionsChange,
+  scanTrigger,
+  onScanProgress,
   highlightedDim = null,
   sizeScale,
 }: {
@@ -53,6 +56,8 @@ export function Shoe3D({
   showDimensionsToggle?: boolean;
   showDimensions?: boolean;
   onShowDimensionsChange?: (v: boolean) => void;
+  scanTrigger?: number;
+  onScanProgress?: ScanProgressListener;
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
 }) {
@@ -85,6 +90,8 @@ export function Shoe3D({
             showDimensionsToggle={showDimensionsToggle}
             showDimensions={showDimensions}
             onShowDimensionsChange={onShowDimensionsChange}
+            scanTrigger={scanTrigger}
+            onScanProgress={onScanProgress}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
           />

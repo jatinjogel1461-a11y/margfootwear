@@ -11,7 +11,7 @@ import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { LogoMark } from "./Logo";
 import { useIsMobile } from "../hooks/use-mobile";
-import { DimensionOverlay } from "./DimensionOverlay";
+import { DimensionOverlay, type ScanProgressListener } from "./DimensionOverlay";
 import type {
   DimensionKey,
   DimensionUnit,
@@ -42,8 +42,10 @@ function SneakerModel({
   dimensions,
   dimensionUnit = "mm",
   showDimensions = false,
+  scanTrigger = 0,
   highlightedDim = null,
   sizeScale = DEFAULT_SCALE_RATIOS,
+  onScanProgress,
 }: {
   color: string;
   autoRotate: boolean;
@@ -53,8 +55,10 @@ function SneakerModel({
   dimensions?: ShoeDimensions;
   dimensionUnit?: DimensionUnit;
   showDimensions?: boolean;
+  scanTrigger?: number;
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
+  onScanProgress?: ScanProgressListener;
 }) {
   const { scene } = useGLTF(modelUrl);
   const group = useRef<THREE.Group>(null!);
@@ -235,7 +239,9 @@ function SneakerModel({
           dims={dimensions}
           unit={dimensionUnit}
           visible={showDimensions}
+          scanTrigger={scanTrigger}
           highlightedDim={highlightedDim}
+          onScanProgress={onScanProgress}
         />
       )}
     </group>
@@ -270,11 +276,13 @@ function CameraController({
   isResetting,
   setIsResetting,
   cameraGoal = "default",
+  driftActive = false,
 }: {
   controlsRef: React.MutableRefObject<any>;
   isResetting: boolean;
   setIsResetting: (v: boolean) => void;
   cameraGoal?: "default" | "side";
+  driftActive?: boolean;
 }) {
   const { camera } = useThree();
   const initialPos = useMemo(() => new THREE.Vector3(3.5, 1.8, 3.5), []);
@@ -298,7 +306,7 @@ function CameraController({
     }
   }, [isResetting, cameraGoal, camera, controlsRef]);
 
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     if (isResetting && controlsRef.current) {
       // 750ms duration
       progress.current += dt / 0.75;
@@ -314,6 +322,15 @@ function CameraController({
 
       if (progress.current === 1) {
         setIsResetting(false);
+      }
+    } else if (driftActive && controlsRef.current) {
+      const reduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduced) {
+        camera.position.x += Math.sin(clock.elapsedTime * 0.7) * dt * 0.06;
+        camera.position.y += Math.cos(clock.elapsedTime * 0.5) * dt * 0.02;
+        controlsRef.current.update();
       }
     }
   });
@@ -334,6 +351,8 @@ export default function Shoe3DViewer({
   showDimensionsToggle = false,
   showDimensions: controlledShowDims,
   onShowDimensionsChange,
+  scanTrigger: externalScanTrigger,
+  onScanProgress,
   highlightedDim = null,
   sizeScale,
 }: {
@@ -349,6 +368,8 @@ export default function Shoe3DViewer({
   showDimensionsToggle?: boolean;
   showDimensions?: boolean;
   onShowDimensionsChange?: (v: boolean) => void;
+  scanTrigger?: number;
+  onScanProgress?: ScanProgressListener;
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
 }) {
@@ -357,10 +378,13 @@ export default function Shoe3DViewer({
   const [isResetting, setIsResetting] = useState(false);
   const [cameraGoal, setCameraGoal] = useState<"default" | "side">("default");
   const [internalShowDims, setInternalShowDims] = useState(false);
+  const [internalScanTrigger, setInternalScanTrigger] = useState(0);
   const autoBeforeDimsRef = useRef(true);
   const controlsRef = useRef<any>(null);
 
   const showDims = controlledShowDims ?? internalShowDims;
+  const effectiveScanTrigger = (externalScanTrigger ?? 0) + internalScanTrigger;
+
   const setShowDims = (next: boolean) => {
     if (onShowDimensionsChange) onShowDimensionsChange(next);
     else setInternalShowDims(next);
@@ -374,12 +398,25 @@ export default function Shoe3DViewer({
       setAuto(false);
       setCameraGoal("side");
       setIsResetting(true);
+      setInternalScanTrigger((t) => t + 1);
     } else if (!showDims && prevShowDimsRef.current) {
       setAuto(autoBeforeDimsRef.current);
       setCameraGoal("default");
     }
     prevShowDimsRef.current = showDims;
   }, [showDims, auto]);
+
+  // Also ease to side view if external scanTrigger increments while showDims is already true
+  const prevExtTriggerRef = useRef(externalScanTrigger ?? 0);
+  useEffect(() => {
+    const cur = externalScanTrigger ?? 0;
+    if (cur > prevExtTriggerRef.current) {
+      prevExtTriggerRef.current = cur;
+      setAuto(false);
+      setCameraGoal("side");
+      setIsResetting(true);
+    }
+  }, [externalScanTrigger]);
 
   const toggleDims = () => {
     setShowDims(!showDims);
@@ -469,8 +506,10 @@ export default function Shoe3DViewer({
             dimensions={dimensions}
             dimensionUnit={dimensionUnit}
             showDimensions={showDims}
+            scanTrigger={effectiveScanTrigger}
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
+            onScanProgress={onScanProgress}
           />
           <ContactShadows
             position={[0, -0.55, 0]}
@@ -519,6 +558,7 @@ export default function Shoe3DViewer({
               isResetting={isResetting}
               setIsResetting={setIsResetting}
               cameraGoal={cameraGoal}
+              driftActive={showDims && !isInteracting}
             />
           </>
         )}
