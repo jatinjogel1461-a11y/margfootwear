@@ -3,13 +3,22 @@ import { PageShell } from "@/components/PageShell";
 import { Shoe3D } from "@/components/Shoe3D";
 import { getProduct, products, formatINR, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star, ShoppingBag, Zap } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoeSpecs } from "@/components/ShoeSpecs";
-import { getDimensions, type DimensionKey, type DimensionUnit } from "@/lib/shoeDimensions";
+import { FindMySize } from "@/components/FindMySize";
+import {
+  COMPARE_OBJECTS,
+  getDimensions,
+  getReferenceSize,
+  getSizeScaleRatios,
+  type CompareObjectId,
+  type DimensionKey,
+  type DimensionUnit,
+} from "@/lib/shoeDimensions";
 
 export const Route = createFileRoute("/product/$id")({
   loader: ({ params }): { product: Product } => {
@@ -47,10 +56,23 @@ function ProductPage() {
   const [unit, setUnit] = useState<DimensionUnit>("mm");
   const [showDimensions, setShowDimensions] = useState(false);
   const [highlightedDim, setHighlightedDim] = useState<DimensionKey | null>(null);
+  const [compareObject, setCompareObject] = useState<CompareObjectId>("none");
   const add = useCart((s) => s.add);
   const nav = useNavigate();
   const color = product.colors[colorIdx];
   const dimensions = getDimensions(product, size);
+  const sizeScale = getSizeScaleRatios(product, size);
+  const referenceLengthMm = getDimensions(product, getReferenceSize(product)).length;
+
+  // Reset per-product state gracefully when navigating between products
+  useEffect(() => {
+    setColorIdx(0);
+    setSize(product.sizes[Math.floor(product.sizes.length / 2)]);
+    setQty(1);
+    setShowDimensions(false);
+    setHighlightedDim(null);
+    setCompareObject("none");
+  }, [product.id, product.sizes]);
 
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
@@ -81,6 +103,9 @@ function ProductPage() {
             showDimensions={showDimensions}
             onShowDimensionsChange={setShowDimensions}
             highlightedDim={highlightedDim}
+            sizeScale={sizeScale}
+            compareObject={compareObject}
+            referenceLengthMm={referenceLengthMm}
           />
         </motion.div>
 
@@ -108,6 +133,35 @@ function ProductPage() {
               setShowDimensions(true);
               setHighlightedDim(dim);
             }}
+          />
+
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5">
+            <label
+              htmlFor="compare-object-select"
+              className="text-xs tracking-[0.2em] text-muted-foreground uppercase whitespace-nowrap"
+            >
+              Compare with
+            </label>
+            <select
+              id="compare-object-select"
+              value={compareObject}
+              onChange={(e) => setCompareObject(e.target.value as CompareObjectId)}
+              aria-label="Compare shoe with a real object"
+              className="min-h-[36px] rounded-md border border-border bg-background px-2.5 py-1 text-xs sm:text-sm text-foreground focus:outline-none focus:border-neon"
+            >
+              <option value="none">None</option>
+              {COMPARE_OBJECTS.map((obj) => (
+                <option key={obj.id} value={obj.id}>
+                  {obj.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <FindMySize
+            product={product}
+            selectedSize={size}
+            onSelectSize={setSize}
           />
 
           <p className="mt-5 text-muted-foreground leading-relaxed">{product.description}</p>

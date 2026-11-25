@@ -12,7 +12,14 @@ import * as THREE from "three";
 import { LogoMark } from "./Logo";
 import { useIsMobile } from "../hooks/use-mobile";
 import { DimensionOverlay } from "./DimensionOverlay";
-import type { DimensionKey, DimensionUnit, ShoeDimensions } from "../lib/shoeDimensions";
+import { CompareObject3D } from "./CompareObject3D";
+import type {
+  CompareObjectId,
+  DimensionKey,
+  DimensionUnit,
+  ShoeDimensions,
+  SizeScaleRatios,
+} from "../lib/shoeDimensions";
 
 // ---------------------------------------------------------------------------
 // Single shared GLTF model path
@@ -21,6 +28,12 @@ import { FALLBACK_SHOE_MODEL } from "../lib/shoeModels";
 
 // Preload the fallback
 useGLTF.preload(FALLBACK_SHOE_MODEL);
+
+const DEFAULT_SCALE_RATIOS: SizeScaleRatios = {
+  lengthRatio: 1,
+  widthRatio: 1,
+  heightRatio: 1,
+};
 
 function SneakerModel({
   color,
@@ -32,6 +45,9 @@ function SneakerModel({
   dimensionUnit = "mm",
   showDimensions = false,
   highlightedDim = null,
+  sizeScale = DEFAULT_SCALE_RATIOS,
+  compareObject = "none",
+  referenceLengthMm = 300,
 }: {
   color: string;
   autoRotate: boolean;
@@ -42,6 +58,9 @@ function SneakerModel({
   dimensionUnit?: DimensionUnit;
   showDimensions?: boolean;
   highlightedDim?: DimensionKey | null;
+  sizeScale?: SizeScaleRatios;
+  compareObject?: CompareObjectId;
+  referenceLengthMm?: number;
 }) {
   const { scene } = useGLTF(modelUrl);
   const group = useRef<THREE.Group>(null!);
@@ -105,13 +124,74 @@ function SneakerModel({
     const maxDim = Math.max(size.x, size.y, size.z);
     const targetSize = 2;
     const s = maxDim > 0 ? targetSize / maxDim : 1;
+    const lengthIsX = size.x >= size.z;
     const yOffset = -(box.min.y * s);
     return {
       scale: s,
+      lengthIsX,
+      boxMinY: box.min.y,
       offset: [-center.x * s, yOffset - 0.35, -center.z * s] as [number, number, number],
       box,
     };
   }, [clonedScene]);
+
+  // Animated 400ms live size scaling
+  const curScaleRef = useRef(new THREE.Vector3(fitTransform.scale, fitTransform.scale, fitTransform.scale));
+  const startScaleRef = useRef(new THREE.Vector3(fitTransform.scale, fitTransform.scale, fitTransform.scale));
+  const targetScaleRef = useRef(new THREE.Vector3(fitTransform.scale, fitTransform.scale, fitTransform.scale));
+  const scaleAnimRef = useRef(1);
+
+  // Reset scale cleanly when switching product/model
+  useEffect(() => {
+    const sx = fitTransform.scale * (fitTransform.lengthIsX ? sizeScale.lengthRatio : sizeScale.widthRatio);
+    const sy = fitTransform.scale * sizeScale.heightRatio;
+    const sz = fitTransform.scale * (fitTransform.lengthIsX ? sizeScale.widthRatio : sizeScale.lengthRatio);
+    curScaleRef.current.set(sx, sy, sz);
+    startScaleRef.current.set(sx, sy, sz);
+    targetScaleRef.current.set(sx, sy, sz);
+    scaleAnimRef.current = 1;
+    if (group.current) {
+      group.current.scale.set(sx, sy, sz);
+      group.current.position.y = -(fitTransform.boxMinY * sy) - 0.35;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitTransform]);
+
+  // Trigger 400ms scale animation when UK size changes
+  useEffect(() => {
+    const sx = fitTransform.scale * (fitTransform.lengthIsX ? sizeScale.lengthRatio : sizeScale.widthRatio);
+    const sy = fitTransform.scale * sizeScale.heightRatio;
+    const sz = fitTransform.scale * (fitTransform.lengthIsX ? sizeScale.widthRatio : sizeScale.lengthRatio);
+
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduced) {
+      curScaleRef.current.set(sx, sy, sz);
+      targetScaleRef.current.set(sx, sy, sz);
+      scaleAnimRef.current = 1;
+      if (group.current) {
+        group.current.scale.set(sx, sy, sz);
+        group.current.position.y = -(fitTransform.boxMinY * sy) - 0.35;
+      }
+      return;
+    }
+
+    startScaleRef.current.copy(curScaleRef.current);
+    targetScaleRef.current.set(sx, sy, sz);
+    scaleAnimRef.current = 0;
+  }, [sizeScale.lengthRatio, sizeScale.widthRatio, sizeScale.heightRatio, fitTransform]);
+
+  useFrame((_, dt) => {
+    if (scaleAnimRef.current < 1 && group.current) {
+      scaleAnimRef.current = Math.min(1, scaleAnimRef.current + dt / 0.4);
+      const ease = 1 - Math.pow(1 - scaleAnimRef.current, 3);
+      curScaleRef.current.lerpVectors(startScaleRef.current, targetScaleRef.current, ease);
+      group.current.scale.copy(curScaleRef.current);
+      group.current.position.y = -(fitTransform.boxMinY * curScaleRef.current.y) - 0.35;
+    }
+  });
 
   useEffect(() => {
     clonedScene.traverse((child) => {
@@ -153,15 +233,25 @@ function SneakerModel({
   }, [clonedScene, color, variant]);
 
   return (
-    <group ref={group} position={fitTransform.offset} scale={fitTransform.scale}>
-      <primitive object={clonedScene} />
-      {dimensions && (
-        <DimensionOverlay
+    <group>
+      <group ref={group} position={fitTransform.offset} scale={fitTransform.scale}>
+        <primitive object={clonedScene} />
+        {dimensions && (
+          <DimensionOverlay
+            box={fitTransform.box}
+            dims={dimensions}
+            unit={dimensionUnit}
+            visible={showDimensions}
+            highlightedDim={highlightedDim}
+          />
+        )}
+      </group>
+      {compareObject !== "none" && (
+        <CompareObject3D
+          compareObject={compareObject}
           box={fitTransform.box}
-          dims={dimensions}
-          unit={dimensionUnit}
-          visible={showDimensions}
-          highlightedDim={highlightedDim}
+          baseScale={fitTransform.scale}
+          referenceLengthMm={referenceLengthMm}
         />
       )}
     </group>
@@ -261,6 +351,9 @@ export default function Shoe3DViewer({
   showDimensions: controlledShowDims,
   onShowDimensionsChange,
   highlightedDim = null,
+  sizeScale,
+  compareObject = "none",
+  referenceLengthMm,
 }: {
   color?: string;
   interactive?: boolean;
@@ -275,6 +368,9 @@ export default function Shoe3DViewer({
   showDimensions?: boolean;
   onShowDimensionsChange?: (v: boolean) => void;
   highlightedDim?: DimensionKey | null;
+  sizeScale?: SizeScaleRatios;
+  compareObject?: CompareObjectId;
+  referenceLengthMm?: number;
 }) {
   const [auto, setAuto] = useState(!showAutoRotateToggle);
   const [isInteracting, setIsInteracting] = useState(false);
@@ -394,6 +490,9 @@ export default function Shoe3DViewer({
             dimensionUnit={dimensionUnit}
             showDimensions={showDims}
             highlightedDim={highlightedDim}
+            sizeScale={sizeScale}
+            compareObject={compareObject}
+            referenceLengthMm={referenceLengthMm}
           />
           <ContactShadows
             position={[0, -0.55, 0]}
@@ -454,10 +553,10 @@ export default function Shoe3DViewer({
               onClick={toggleDims}
               aria-pressed={showDims}
               aria-label={showDims ? "Hide shoe dimensions" : "Show shoe dimensions"}
-              className={`glass px-3 py-1.5 text-xs tracking-wider rounded-full transition ${
+              className={`px-3 py-1.5 text-xs tracking-wider rounded-full transition ${
                 showDims
-                  ? "bg-neon text-neon-foreground font-semibold"
-                  : "hover:bg-neon hover:text-neon-foreground"
+                  ? "bg-[#ff6a00] text-neutral-950 border border-[#ff6a00] font-semibold shadow-sm"
+                  : "glass text-foreground hover:bg-neon hover:text-neon-foreground"
               }`}
             >
               Dimensions
@@ -469,7 +568,7 @@ export default function Shoe3DViewer({
               onClick={() => setAuto((a) => !a)}
               aria-pressed={auto}
               aria-label={auto ? "Pause auto-rotation" : "Start auto-rotation"}
-              className="glass px-3 py-1.5 text-xs tracking-wider rounded-full hover:bg-neon hover:text-neon-foreground transition"
+              className="glass text-foreground px-3 py-1.5 text-xs tracking-wider rounded-full hover:bg-neon hover:text-neon-foreground transition"
             >
               {auto ? "PAUSE" : "AUTO-ROTATE"}
             </button>

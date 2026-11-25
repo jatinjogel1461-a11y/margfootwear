@@ -66,6 +66,7 @@ function buildCadDim(
   offsetDist: number,
   arrowLen: number,
   arrowSpread: number,
+  labelT = 0.5,
 ): CadDimension {
   const o: V3 = [
     offsetDir[0] * offsetDist,
@@ -139,7 +140,7 @@ function buildCadDim(
     arrow1b,
     arrow2a,
     arrow2b,
-    label: midV3(start, end),
+    label: lerpV3(start, end, labelT),
   };
 }
 
@@ -214,7 +215,7 @@ export function DimensionOverlay({
     const lengthIsX = sx >= sz;
 
     if (lengthIsX) {
-      // 1. Length along the sole (X axis, offset toward +Z front side of side view)
+      // 1. Length along the sole (X axis, label nudged toward heel at 0.34)
       const length = buildCadDim(
         [box.min.x, yBot, box.max.z],
         [box.max.x, yBot, box.max.z],
@@ -222,20 +223,22 @@ export function DimensionOverlay({
         gap,
         arrowLen,
         arrowSpread,
+        0.34,
       );
 
-      // 2. Width at the ball of the foot (Z axis, slightly forward of center, below sole)
-      const ballX = box.min.x + sx * 0.58;
+      // 2. Width at the toe box / ball of foot (0.78 along X, below sole, label at outer edge 0.88)
+      const toeX = box.min.x + sx * 0.78;
       const width = buildCadDim(
-        [ballX, yBot, box.min.z],
-        [ballX, yBot, box.max.z],
+        [toeX, yBot, box.min.z],
+        [toeX, yBot, box.max.z],
         [0, -1, 0],
-        gap * 0.55,
+        gap * 0.65,
         arrowLen,
         arrowSpread,
+        0.88,
       );
 
-      // 3. Height at the heel/ankle (Y axis, at heel end, offset outward along -X)
+      // 3. Height at the heel/ankle (Y axis, offset outward along -X)
       const heelZ = box.min.z + sz * 0.5;
       const height = buildCadDim(
         [box.min.x, box.min.y, heelZ],
@@ -244,11 +247,12 @@ export function DimensionOverlay({
         gap * 0.85,
         arrowLen,
         arrowSpread,
+        0.55,
       );
 
       return { length, width, height };
     } else {
-      // 1. Length along the sole (Z axis, offset toward +X)
+      // 1. Length along the sole (Z axis, label nudged toward heel at 0.34)
       const length = buildCadDim(
         [box.max.x, yBot, box.min.z],
         [box.max.x, yBot, box.max.z],
@@ -256,17 +260,19 @@ export function DimensionOverlay({
         gap,
         arrowLen,
         arrowSpread,
+        0.34,
       );
 
-      // 2. Width at the ball of the foot (X axis, below sole)
-      const ballZ = box.min.z + sz * 0.58;
+      // 2. Width at the toe box / ball of foot (0.78 along Z, below sole, label at outer edge 0.88)
+      const toeZ = box.min.z + sz * 0.78;
       const width = buildCadDim(
-        [box.min.x, yBot, ballZ],
-        [box.max.x, yBot, ballZ],
+        [box.min.x, yBot, toeZ],
+        [box.max.x, yBot, toeZ],
         [0, -1, 0],
-        gap * 0.55,
+        gap * 0.65,
         arrowLen,
         arrowSpread,
+        0.88,
       );
 
       // 3. Height at the heel/ankle (Y axis, offset outward along -Z)
@@ -278,6 +284,7 @@ export function DimensionOverlay({
         gap * 0.85,
         arrowLen,
         arrowSpread,
+        0.55,
       );
 
       return { length, width, height };
