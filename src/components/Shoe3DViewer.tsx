@@ -51,6 +51,7 @@ function SneakerModel({
   highlightedDim = null,
   sizeScale = DEFAULT_SCALE_RATIOS,
   onScanProgress,
+  modelInfoRef,
 }: {
   color: string;
   autoRotate: boolean;
@@ -64,6 +65,7 @@ function SneakerModel({
   highlightedDim?: DimensionKey | null;
   sizeScale?: SizeScaleRatios;
   onScanProgress?: ScanProgressListener;
+  modelInfoRef?: React.MutableRefObject<{ group: THREE.Group | null; lengthIsX: boolean }>;
 }) {
   const { scene } = useGLTF(modelUrl);
   const group = useRef<THREE.Group>(null!);
@@ -137,6 +139,13 @@ function SneakerModel({
       box,
     };
   }, [clonedScene]);
+
+  // Expose model group + orientation to CameraController for model-relative axis views
+  useEffect(() => {
+    if (modelInfoRef) {
+      modelInfoRef.current = { group: group.current, lengthIsX: fitTransform.lengthIsX };
+    }
+  }, [modelInfoRef, fitTransform.lengthIsX]);
 
   // Animated 400ms live size scaling
   const curScaleRef = useRef(new THREE.Vector3(fitTransform.scale, fitTransform.scale, fitTransform.scale));
@@ -338,6 +347,7 @@ function CameraController({
   cameraGoal = "default",
   driftActive = false,
   axisView = null,
+  modelInfoRef,
 }: {
   controlsRef: React.MutableRefObject<any>;
   isResetting: boolean;
@@ -345,13 +355,12 @@ function CameraController({
   cameraGoal?: "default" | "side";
   driftActive?: boolean;
   axisView?: DimensionKey | null;
+  modelInfoRef: React.MutableRefObject<{ group: THREE.Group | null; lengthIsX: boolean }>;
 }) {
   const { camera } = useThree();
   const initialPos = useMemo(() => new THREE.Vector3(3.5, 1.8, 3.5), []);
-  const sidePos = useMemo(() => new THREE.Vector3(0.35, 0.7, 4.45), []);
-  const topPos = useMemo(() => new THREE.Vector3(0, 4.6, 0.35), []);
-  const frontPos = useMemo(() => new THREE.Vector3(4.35, 0.65, 0.35), []);
   const initialTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  const yAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
 
   const startPos = useRef(new THREE.Vector3());
   const startTarget = useRef(new THREE.Vector3());
@@ -368,6 +377,33 @@ function CameraController({
   const axisToTargetRef = useRef(new THREE.Vector3());
   const prevAxisRef = useRef<DimensionKey | null>(null);
 
+  const computeModelRelativeDir = (view: "length" | "width" | "height" | "side") => {
+    const { group, lengthIsX } = modelInfoRef.current;
+    const theta = group ? group.rotation.y : 0;
+    const dir = new THREE.Vector3();
+
+    if (view === "width") {
+      // Top-down view with slight width-axis offset to avoid gimbal lock
+      dir.set(lengthIsX ? 0 : 0.085, 0.996, lengthIsX ? 0.085 : 0);
+    } else if (view === "height") {
+      // Side view from a slightly lower elevation (~4°) angled slightly toward heel
+      const elev = Math.sin((4 * Math.PI) / 180);
+      dir.set(lengthIsX ? -0.22 : 0.97, elev, lengthIsX ? 0.97 : -0.22);
+    } else {
+      // Length / side view: pure side view looking along model's width axis, ~10° elevation
+      const elev = Math.sin((10 * Math.PI) / 180);
+      const horiz = Math.cos((10 * Math.PI) / 180);
+      dir.set(lengthIsX ? 0 : horiz, elev, lengthIsX ? horiz : 0);
+    }
+
+    dir.normalize().applyAxisAngle(yAxis, theta);
+    const fovDeg = (camera as THREE.PerspectiveCamera).fov || 38;
+    const halfFov = ((fovDeg / 2) * Math.PI) / 180;
+    // Fit entire cage (~1.45 radius) inside viewer with padding
+    const fitDist = Math.min(6.4, Math.max(4.4, (1.45 * 1.2) / Math.tan(halfFov)));
+    return dir.multiplyScalar(fitDist);
+  };
+
   useEffect(() => {
     const prev = prevAxisRef.current;
     if (axisView === prev) return;
@@ -375,25 +411,25 @@ function CameraController({
 
     if (!controlsRef.current) return;
 
+    // Cancel any pending camera reset when an axis tile is hovered
+    if (isResetting) {
+      setIsResetting(false);
+    }
+
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (axisView !== null) {
-      // Save previous camera position only when entering axis view from null
       if (prev === null) {
         savedPosRef.current = camera.position.clone();
         savedTargetRef.current = controlsRef.current.target.clone();
       }
-      const targetVec =
-        axisView === "length" ? sidePos : axisView === "width" ? topPos : frontPos;
-
       axisFromPosRef.current.copy(camera.position);
-      axisToPosRef.current.copy(targetVec);
+      axisToPosRef.current.copy(computeModelRelativeDir(axisView));
       axisFromTargetRef.current.copy(controlsRef.current.target);
       axisToTargetRef.current.copy(initialTarget);
     } else if (savedPosRef.current && savedTargetRef.current) {
-      // Returning to previous camera position on blur/mouseleave/untoggle
       axisFromPosRef.current.copy(camera.position);
       axisToPosRef.current.copy(savedPosRef.current);
       axisFromTargetRef.current.copy(controlsRef.current.target);
@@ -414,7 +450,8 @@ function CameraController({
       axisAnimActiveRef.current = true;
       axisAnimProgressRef.current = 0;
     }
-  }, [axisView, camera, controlsRef, sidePos, topPos, frontPos, initialTarget]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [axisView, camera, controlsRef, initialTarget]);
 
   useEffect(() => {
     if (isResetting) {
@@ -448,13 +485,11 @@ function CameraController({
     }
 
     if (isResetting && controlsRef.current) {
-      // 750ms duration
       progress.current += dt / 0.75;
       if (progress.current >= 1) progress.current = 1;
 
-      // easeOutCubic
       const ease = 1 - Math.pow(1 - progress.current, 3);
-      const goalPos = cameraGoal === "side" ? sidePos : initialPos;
+      const goalPos = cameraGoal === "side" ? computeModelRelativeDir("side") : initialPos;
 
       camera.position.lerpVectors(startPos.current, goalPos, ease);
       controlsRef.current.target.lerpVectors(startTarget.current, initialTarget, ease);
@@ -523,6 +558,10 @@ export default function Shoe3DViewer({
   const [internalScanTrigger, setInternalScanTrigger] = useState(0);
   const autoBeforeDimsRef = useRef(true);
   const controlsRef = useRef<any>(null);
+  const modelInfoRef = useRef<{ group: THREE.Group | null; lengthIsX: boolean }>({
+    group: null,
+    lengthIsX: true,
+  });
 
   const showDims = controlledShowDims ?? internalShowDims;
   const effectiveScanTrigger = (externalScanTrigger ?? 0) + internalScanTrigger;
@@ -654,6 +693,7 @@ export default function Shoe3DViewer({
             highlightedDim={highlightedDim}
             sizeScale={sizeScale}
             onScanProgress={onScanProgress}
+            modelInfoRef={modelInfoRef}
           />
           <ContactShadows
             position={[0, -0.55, 0]}
@@ -705,6 +745,7 @@ export default function Shoe3DViewer({
               cameraGoal={cameraGoal}
               driftActive={showDims && !isInteracting}
               axisView={highlightedDim}
+              modelInfoRef={modelInfoRef}
             />
           </>
         )}

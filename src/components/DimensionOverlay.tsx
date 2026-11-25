@@ -44,7 +44,7 @@ const DUR_LENGTH = 1.6;
 const DUR_WIDTH = 1.2;
 const DUR_HEIGHT = 1.2;
 const TOTAL_SCAN_DUR = DUR_LENGTH + DUR_WIDTH + DUR_HEIGHT;
-const LOCK_ON_DUR = 0.4; // ~400 ms lock-on flash after phase 3
+const LOCK_ON_DUR = 0.4;
 const SIZE_TWEEN_DUR = 0.4;
 
 function easeInOutCubic(t: number): number {
@@ -66,10 +66,10 @@ export function DimensionOverlay({
 }: DimensionOverlayProps) {
   const rootRef = useRef<THREE.Group>(null!);
   const laserGroupRef = useRef<THREE.Group>(null!);
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const isMobile = useIsMobile();
 
-  // Label DOM refs for zero-rerender text & screen-space offset updates
+  // DOM refs for zero-rerender label positioning, text, opacity, and leader lines
   const labelWrapRefs = useRef<Record<DimensionKey, HTMLDivElement | null>>({
     length: null,
     width: null,
@@ -80,18 +80,25 @@ export function DimensionOverlay({
     width: null,
     height: null,
   });
+  const leaderLineRefs = useRef<Record<DimensionKey, SVGLineElement | null>>({
+    length: null,
+    width: null,
+    height: null,
+  });
 
-  // Keep latest props in refs for useFrame
+  // Latest props in refs
   const dimsRef = useRef(dims);
   const unitRef = useRef(unit);
   const highlightedRef = useRef(highlightedDim);
   const onProgressRef = useRef(onScanProgress);
+  const sizeRef = useRef(size);
   dimsRef.current = dims;
   unitRef.current = unit;
   highlightedRef.current = highlightedDim;
   onProgressRef.current = onScanProgress;
+  sizeRef.current = size;
 
-  // Size tween refs (used when UK size changes while overlay is visible)
+  // Size tween refs
   const displayDimsRef = useRef<ShoeDimensions>({ ...dims });
   const tweenStartDimsRef = useRef<ShoeDimensions>({ ...dims });
   const tweenTargetDimsRef = useRef<ShoeDimensions>({ ...dims });
@@ -115,7 +122,7 @@ export function DimensionOverlay({
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  // Trigger size tween when dims change (do NOT replay scan)
+  // Size tween when UK size changes (no scan replay)
   useEffect(() => {
     if (
       tweenTargetDimsRef.current.length === dims.length &&
@@ -199,7 +206,20 @@ export function DimensionOverlay({
       depthTest: false,
     });
 
-    // 2. Three axis ruler lines (updated in-place during scan)
+    // 8 cage corners for screen-space silhouette projection
+    const cageCorners = [
+      new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+    ];
+    const centerVec = new THREE.Vector3(cx, cy, cz);
+
+    // 2. Three axis ruler lines
     const createRuler = (color: string, start: THREE.Vector3, end: THREE.Vector3) => {
       const g = new THREE.BufferGeometry().setFromPoints([start.clone(), end.clone()]);
       const m = new THREE.LineBasicMaterial({
@@ -219,11 +239,11 @@ export function DimensionOverlay({
       : new THREE.Vector3(box.max.x + gap, box.min.y, box.max.z);
 
     const widStart = lengthIsX
-      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.55, box.min.z)
-      : new THREE.Vector3(box.min.x, box.min.y - gap * 0.55, box.min.z + sz * 0.78);
+      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.5, box.min.z)
+      : new THREE.Vector3(box.min.x, box.min.y - gap * 0.5, box.min.z + sz * 0.78);
     const widEnd = lengthIsX
-      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.55, box.max.z)
-      : new THREE.Vector3(box.max.x, box.min.y - gap * 0.55, box.min.z + sz * 0.78);
+      ? new THREE.Vector3(box.min.x + sx * 0.78, box.min.y - gap * 0.5, box.max.z)
+      : new THREE.Vector3(box.max.x, box.min.y - gap * 0.5, box.min.z + sz * 0.78);
 
     const heiStart = lengthIsX
       ? new THREE.Vector3(box.min.x - gap * 0.8, box.min.y, cz)
@@ -238,7 +258,7 @@ export function DimensionOverlay({
       height: createRuler(AXIS_TINTS.height, heiStart, heiEnd),
     };
 
-    // 3. Tick mark geometries (every 10 mm short tick, every 50 mm longer tick)
+    // 3. Tick mark geometries (10 mm short, 50 mm long)
     const buildTicks = (
       start: THREE.Vector3,
       end: THREE.Vector3,
@@ -288,7 +308,7 @@ export function DimensionOverlay({
       ),
     };
 
-    // 4. Laser plane + bright edge line (unit 1x1, scaled & oriented per phase)
+    // 4. Laser plane + bright edge line
     const laserPlaneGeom = new THREE.PlaneGeometry(1, 1);
     const laserPlaneMat = new THREE.MeshBasicMaterial({
       color: AXIS_TINTS.length,
@@ -308,10 +328,9 @@ export function DimensionOverlay({
       depthTest: false,
     });
 
-    // Label positions (offset along edges away from center)
     const labelVecs: Record<DimensionKey, THREE.Vector3> = {
-      length: lenStart.clone().lerp(lenEnd, 0.34),
-      width: widStart.clone().lerp(widEnd, 0.88),
+      length: lenStart.clone().lerp(lenEnd, 0.5),
+      width: widStart.clone().lerp(widEnd, 0.85),
       height: heiStart.clone().lerp(heiEnd, 0.55),
     };
     const labelPos: Record<DimensionKey, [number, number, number]> = {
@@ -331,6 +350,8 @@ export function DimensionOverlay({
       maxDim,
       cageGeo,
       cageMat,
+      cageCorners,
+      centerVec,
       rulers,
       ticks,
       laserPlaneGeom,
@@ -342,7 +363,6 @@ export function DimensionOverlay({
     };
   }, [box, dims.length, dims.width, dims.height]);
 
-  // Dispose geometries and materials on unmount or recompute
   useEffect(() => {
     if (!geo) return;
     return () => {
@@ -361,7 +381,6 @@ export function DimensionOverlay({
     };
   }, [geo]);
 
-  // Precompute line distances for dashed cage
   const cageLineRef = useRef<THREE.LineSegments>(null!);
   useEffect(() => {
     if (cageLineRef.current) {
@@ -371,14 +390,7 @@ export function DimensionOverlay({
 
   // Reusable temp objects for zero-allocation useFrame
   const tmpVec = useMemo(() => new THREE.Vector3(), []);
-  const projVecs = useMemo(
-    () => ({
-      length: new THREE.Vector3(),
-      width: new THREE.Vector3(),
-      height: new THREE.Vector3(),
-    }),
-    [],
-  );
+  const projVec = useMemo(() => new THREE.Vector3(), []);
   const baseCageColor = useMemo(() => new THREE.Color("#94a3b8"), []);
   const flashCageColor = useMemo(() => new THREE.Color("#ff6a00"), []);
 
@@ -444,7 +456,7 @@ export function DimensionOverlay({
       height: pHei,
     });
 
-    // 3. Position and orient the laser plane for the active phase
+    // 3. Laser plane position & orientation
     if (laserGroupRef.current) {
       if (!scanningRef.current || reducedMotionRef.current) {
         laserGroupRef.current.visible = false;
@@ -490,7 +502,7 @@ export function DimensionOverlay({
       }
     }
 
-    // 4. Cage opacity + lock-on flash pulse after phase 3
+    // 4. Cage opacity + lock-on flash
     const cageProgress = reducedMotionRef.current
       ? 1
       : clamp01((elapsed - TOTAL_SCAN_DUR * 0.6) / (TOTAL_SCAN_DUR * 0.4));
@@ -501,41 +513,114 @@ export function DimensionOverlay({
     geo.cageMat.opacity = 0.28 * cageProgress + 0.58 * lockFlash;
     geo.cageMat.color.copy(baseCageColor).lerp(flashCageColor, lockFlash);
 
-    // 5. Screen-space label collision avoidance (nudge in px when two labels are too close)
+    // 5. Project cage corners & model center to screen pixels to place labels OUTSIDE silhouette
+    const w = sizeRef.current.width || 400;
+    const h = sizeRef.current.height || 400;
+    const toPx = (v: THREE.Vector3) => ({
+      x: (v.x * 0.5 + 0.5) * w,
+      y: (-v.y * 0.5 + 0.5) * h,
+    });
+
+    let cageMinX = Infinity;
+    let cageMaxX = -Infinity;
+    let cageMinY = Infinity;
+    let cageMaxY = -Infinity;
+    for (let i = 0; i < geo.cageCorners.length; i++) {
+      projVec.copy(geo.cageCorners[i]);
+      rootRef.current.localToWorld(projVec);
+      projVec.project(camera);
+      const px = toPx(projVec);
+      if (px.x < cageMinX) cageMinX = px.x;
+      if (px.x > cageMaxX) cageMaxX = px.x;
+      if (px.y < cageMinY) cageMinY = px.y;
+      if (px.y > cageMaxY) cageMaxY = px.y;
+    }
+
+    projVec.copy(geo.centerVec);
+    rootRef.current.localToWorld(projVec);
+    projVec.project(camera);
+    const centerPx = toPx(projVec);
+
     const keys: DimensionKey[] = ["length", "width", "height"];
-    const nudges: Record<DimensionKey, { x: number; y: number }> = {
+    const anchorPx: Record<DimensionKey, { x: number; y: number }> = {
+      length: { x: 0, y: 0 },
+      width: { x: 0, y: 0 },
+      height: { x: 0, y: 0 },
+    };
+    const targetPx: Record<DimensionKey, { x: number; y: number }> = {
       length: { x: 0, y: 0 },
       width: { x: 0, y: 0 },
       height: { x: 0, y: 0 },
     };
 
+    const margin = 8;
+    const halfLabelW = isMobile ? 40 : 48;
+    const halfLabelH = 14;
+    const pushOut = 24;
+
     keys.forEach((k) => {
-      projVecs[k].copy(geo.labelVecs[k]);
-      rootRef.current.localToWorld(projVecs[k]);
-      projVecs[k].project(camera);
+      projVec.copy(geo.labelVecs[k]);
+      rootRef.current.localToWorld(projVec);
+      projVec.project(camera);
+      const a = toPx(projVec);
+      anchorPx[k] = a;
+
+      // Outward vector from model center
+      let dx = a.x - centerPx.x;
+      let dy = a.y - centerPx.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 1) {
+        dx = k === "height" ? -1 : k === "width" ? 1 : 0;
+        dy = k === "length" ? 1 : -0.5;
+      } else {
+        dx /= dist;
+        dy /= dist;
+      }
+
+      let lx = a.x + dx * pushOut;
+      let ly = a.y + dy * pushOut;
+
+      // If still inside cage screen-space box, push beyond the nearest cage edge + 24px
+      const padCage = 14;
+      if (
+        lx > cageMinX - padCage &&
+        lx < cageMaxX + padCage &&
+        ly > cageMinY - padCage &&
+        ly < cageMaxY + padCage
+      ) {
+        const dLeft = Math.abs(lx - (cageMinX - pushOut));
+        const dRight = Math.abs(cageMaxX + pushOut - lx);
+        const dTop = Math.abs(ly - (cageMinY - pushOut));
+        const dBot = Math.abs(cageMaxY + pushOut - ly);
+        const minEdge = Math.min(dLeft, dRight, dTop, dBot);
+        if (minEdge === dBot) ly = cageMaxY + pushOut;
+        else if (minEdge === dTop) ly = cageMinY - pushOut;
+        else if (minEdge === dLeft) lx = cageMinX - pushOut;
+        else lx = cageMaxX + pushOut;
+      }
+
+      targetPx[k] = {
+        x: Math.max(margin + halfLabelW, Math.min(w - margin - halfLabelW, lx)),
+        y: Math.max(margin + halfLabelH, Math.min(h - margin - halfLabelH, ly)),
+      };
     });
 
-    const minDist = 0.22;
+    // Separate pairs of labels if too close in screen space
     for (let i = 0; i < keys.length; i++) {
       for (let j = i + 1; j < keys.length; j++) {
-        const a = keys[i];
-        const b = keys[j];
-        const dx = projVecs[b].x - projVecs[a].x;
-        const dy = projVecs[b].y - projVecs[a].y;
-        const d = Math.hypot(dx, dy);
-        if (d < minDist) {
-          const nx = d > 0.001 ? dx / d : 0;
-          const ny = d > 0.001 ? dy / d : 1;
-          const push = ((minDist - d) / minDist) * 18;
-          nudges[a].x -= nx * push;
-          nudges[a].y += ny * push;
-          nudges[b].x += nx * push;
-          nudges[b].y -= ny * push;
+        const ka = keys[i];
+        const kb = keys[j];
+        const dx = targetPx[kb].x - targetPx[ka].x;
+        const dy = targetPx[kb].y - targetPx[ka].y;
+        if (Math.abs(dx) < halfLabelW * 1.8 && Math.abs(dy) < halfLabelH * 2.2) {
+          const pushY = dy >= 0 ? halfLabelH * 1.4 : -halfLabelH * 1.4;
+          targetPx[ka].y = Math.max(margin + halfLabelH, Math.min(h - margin - halfLabelH, targetPx[ka].y - pushY));
+          targetPx[kb].y = Math.max(margin + halfLabelH, Math.min(h - margin - halfLabelH, targetPx[kb].y + pushY));
         }
       }
     }
 
-    // 6. Update ruler lines, ticks, pulse highlight, and label text/opacity/nudge
+    // 6. Update ruler lines, ticks, leader lines, and label DOM
     const progressByAxis: Record<DimensionKey, number> = {
       length: pLen,
       width: pWid,
@@ -555,11 +640,12 @@ export function DimensionOverlay({
 
       const isHl = hl === key;
       const isDimmed = hl !== null && hl !== key;
-      const axisAlpha = (p > 0.01 ? 1 : 0) * (isDimmed ? 0.28 : isHl ? pulse : 0.95);
+      const axisAlpha = (p > 0.01 ? 1 : 0) * (isDimmed ? 0.25 : isHl ? pulse : 0.95);
 
       ruler.mat.opacity = axisAlpha;
+      // Ruler ticks stay at 40% opacity except on active axis
       geo.ticks[key].mat.opacity =
-        (p > 0.95 ? 0.75 : p * 0.5) * (isDimmed ? 0.28 : isHl ? pulse : 1);
+        (p > 0.95 ? 1 : p * 0.6) * (hl !== null ? (isHl ? pulse : 0.4) : 0.4);
 
       const textEl = labelTextRefs.current[key];
       if (textEl) {
@@ -567,11 +653,25 @@ export function DimensionOverlay({
         const val = displayDimsRef.current[key] * p;
         textEl.textContent = `${prefix} ${formatDimension(val, unitRef.current)}`;
       }
+
+      const offX = targetPx[key].x - anchorPx[key].x;
+      const offY = targetPx[key].y - anchorPx[key].y;
+
       const wrapEl = labelWrapRefs.current[key];
       if (wrapEl) {
-        wrapEl.style.opacity = p > 0.02 ? String(isDimmed ? 0.35 : 1) : "0";
-        wrapEl.style.boxShadow = isHl ? `0 0 14px ${AXIS_TINTS[key]}` : "none";
-        wrapEl.style.transform = `translate(${nudges[key].x.toFixed(1)}px, ${nudges[key].y.toFixed(1)}px)`;
+        // During an axis view, show ONLY the active axis label; hide the other two (opacity 0)
+        const labelOpacity = p > 0.02 ? (hl !== null ? (isHl ? 1 : 0) : 1) : 0;
+        wrapEl.style.opacity = String(labelOpacity);
+        wrapEl.style.boxShadow = isHl ? `0 0 14px ${AXIS_TINTS[key]}88` : "none";
+        wrapEl.style.transform = `translate(-50%, -50%) translate(${offX.toFixed(1)}px, ${offY.toFixed(1)}px)`;
+      }
+
+      const leaderEl = leaderLineRefs.current[key];
+      if (leaderEl) {
+        const lineOpacity = p > 0.02 ? (hl !== null ? (isHl ? 0.85 : 0) : 0.65) : 0;
+        leaderEl.style.opacity = String(lineOpacity);
+        leaderEl.setAttribute("x2", offX.toFixed(1));
+        leaderEl.setAttribute("y2", offY.toFixed(1));
       }
     });
   });
@@ -596,7 +696,7 @@ export function DimensionOverlay({
         <lineSegments geometry={geo.laserEdgeBase} material={geo.laserEdgeMat} renderOrder={999} />
       </group>
 
-      {/* Extending ruler lines, tick marks, and mono labels */}
+      {/* Extending ruler lines, tick marks, leader lines, and mono labels */}
       {(["length", "width", "height"] as DimensionKey[]).map((key) => {
         const tint = AXIS_TINTS[key];
         const prefix = key === "length" ? "L" : key === "width" ? "W" : "H";
@@ -604,35 +704,66 @@ export function DimensionOverlay({
           <group key={key}>
             <lineSegments geometry={geo.rulers[key].geom} material={geo.rulers[key].mat} renderOrder={999} />
             <lineSegments geometry={geo.ticks[key].geom} material={geo.ticks[key].mat} renderOrder={999} />
-            <Html position={geo.labelPos[key]} center zIndexRange={[40, 0]}>
-              <div
-                ref={(el) => {
-                  labelWrapRefs.current[key] = el;
-                }}
-                style={{
-                  color: tint,
-                  fontSize,
-                  fontWeight: 700,
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  background: "rgba(12, 12, 16, 0.88)",
-                  padding: isMobile ? "2px 5px" : "3px 8px",
-                  borderRadius: 6,
-                  whiteSpace: "nowrap",
-                  pointerEvents: "none",
-                  userSelect: "none",
-                  border: `1px solid ${tint}66`,
-                  fontVariantNumeric: "tabular-nums",
-                  letterSpacing: "0.04em",
-                  transition: "opacity 0.12s linear",
-                }}
-              >
-                <span
-                  ref={(el) => {
-                    labelTextRefs.current[key] = el;
+            <Html position={geo.labelPos[key]} center zIndexRange={[100, 0]}>
+              <div style={{ position: "relative", width: 0, height: 0, pointerEvents: "none" }}>
+                <svg
+                  width="1"
+                  height="1"
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    overflow: "visible",
+                    pointerEvents: "none",
                   }}
                 >
-                  {prefix} {formatDimension(dims[key], unit)}
-                </span>
+                  <line
+                    ref={(el) => {
+                      leaderLineRefs.current[key] = el;
+                    }}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="0"
+                    stroke={tint}
+                    strokeWidth="1"
+                    strokeDasharray="2 2"
+                    style={{ transition: "opacity 150ms ease" }}
+                  />
+                </svg>
+                <div
+                  ref={(el) => {
+                    labelWrapRefs.current[key] = el;
+                  }}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    transform: "translate(-50%, -50%)",
+                    color: tint,
+                    fontSize,
+                    fontWeight: 700,
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    background: "rgba(18, 19, 24, 0.92)",
+                    padding: isMobile ? "2px 5px" : "3px 8px",
+                    borderRadius: 6,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
+                    userSelect: "none",
+                    border: `1px solid ${tint}`,
+                    fontVariantNumeric: "tabular-nums",
+                    letterSpacing: "0.04em",
+                    transition: "opacity 150ms ease",
+                  }}
+                >
+                  <span
+                    ref={(el) => {
+                      labelTextRefs.current[key] = el;
+                    }}
+                  >
+                    {prefix} {formatDimension(dims[key], unit)}
+                  </span>
+                </div>
               </div>
             </Html>
           </group>
