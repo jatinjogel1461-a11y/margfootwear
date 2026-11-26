@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -10,9 +10,19 @@ import {
   X,
   ArrowLeft,
   ShieldCheck,
+  LogOut,
 } from "lucide-react";
+import { toast } from "sonner";
+import { getAdminSession } from "@/lib/adminSession.fn";
 
 export const Route = createFileRoute("/admin")({
+  beforeLoad: async () => {
+    const session = await getAdminSession();
+    if (!session.authenticated) {
+      throw redirect({ to: "/admin-login" });
+    }
+    return { adminId: session.adminId };
+  },
   head: () => ({
     meta: [{ title: "Admin Dashboard — Marg" }],
   }),
@@ -28,7 +38,22 @@ const SIDEBAR_ITEMS = [
 ] as const;
 
 function AdminLayout() {
+  const router = useRouter();
+  const { adminId } = Route.useRouteContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+      toast.success("Signed out of Admin Dashboard");
+      await router.navigate({ to: "/admin-login" });
+    } catch {
+      toast.error("Failed to sign out");
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
@@ -72,7 +97,7 @@ function AdminLayout() {
               </Link>
             ))}
           </nav>
-          <div className="pt-2 border-t border-border">
+          <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
@@ -81,6 +106,15 @@ function AdminLayout() {
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to Storefront
             </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs text-destructive hover:opacity-80 transition disabled:opacity-50"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Log Out
+            </button>
           </div>
         </div>
       )}
@@ -91,10 +125,10 @@ function AdminLayout() {
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-neon/15 border border-neon/40 text-neon">
             <ShieldCheck className="h-5 w-5" />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="font-display font-bold leading-none">Marg Admin</p>
-            <p className="mt-1 text-[11px] uppercase tracking-widest text-muted-foreground">
-              Control Panel
+            <p className="mt-1 text-[11px] uppercase tracking-widest text-muted-foreground truncate">
+              {adminId || "Control Panel"}
             </p>
           </div>
         </div>
@@ -121,13 +155,25 @@ function AdminLayout() {
           <div className="rounded-lg border border-border bg-background/60 px-3 py-2 text-[11px] text-muted-foreground">
             Frontend UI shell · Backend integration pending
           </div>
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-neon transition"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Storefront
-          </Link>
+          <div className="flex items-center justify-between gap-2">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-neon transition"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Storefront
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              aria-label="Log out of admin dashboard"
+              className="inline-flex items-center gap-1.5 text-xs text-destructive hover:opacity-80 transition disabled:opacity-50"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Log Out
+            </button>
+          </div>
         </div>
       </aside>
 

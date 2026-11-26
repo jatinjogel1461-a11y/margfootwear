@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -38,6 +39,9 @@ import { Route as ProfileOrdersRouteImport } from './routes/profile/orders'
 import { Route as ProfilePasswordRouteImport } from './routes/profile/password'
 import { Route as ProfilePaymentRouteImport } from './routes/profile/payment'
 import { Route as ProfileWishlistRouteImport } from './routes/profile/wishlist'
+import { Route as ApiAdminLoginRouteImport } from './routes/api/admin/login'
+import { Route as ApiAdminLogoutRouteImport } from './routes/api/admin/logout'
+import { Route as ApiAdminSessionRouteImport } from './routes/api/admin/session'
 import { Route as ApiRazorpayCreateOrderRouteImport } from './routes/api/razorpay/create-order'
 import { Route as ApiRazorpayVerifyRouteImport } from './routes/api/razorpay/verify'
 import { Route as ApiRazorpayWebhookRouteImport } from './routes/api/razorpay/webhook'
@@ -55,6 +59,11 @@ const AboutRoute = AboutRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin-login',
+  path: '/admin-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CartRoute = CartRouteImport.update({
@@ -187,6 +196,21 @@ const ProfileWishlistRoute = ProfileWishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => ProfileRoute,
 } as any)
+const ApiAdminLoginRoute = ApiAdminLoginRouteImport.update({
+  id: '/api/admin/login',
+  path: '/api/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminLogoutRoute = ApiAdminLogoutRouteImport.update({
+  id: '/api/admin/logout',
+  path: '/api/admin/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminSessionRoute = ApiAdminSessionRouteImport.update({
+  id: '/api/admin/session',
+  path: '/api/admin/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRazorpayCreateOrderRoute = ApiRazorpayCreateOrderRouteImport.update({
   id: '/api/razorpay/create-order',
   path: '/api/razorpay/create-order',
@@ -207,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -233,6 +258,9 @@ export interface FileRoutesByFullPath {
   '/profile/wishlist': typeof ProfileWishlistRoute
   '/admin/': typeof AdminIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/session': typeof ApiAdminSessionRoute
   '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
   '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
@@ -240,6 +268,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin-login': typeof AdminLoginRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -265,6 +294,9 @@ export interface FileRoutesByTo {
   '/profile/wishlist': typeof ProfileWishlistRoute
   '/admin': typeof AdminIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/session': typeof ApiAdminSessionRoute
   '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
   '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
@@ -274,6 +306,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -300,6 +333,9 @@ export interface FileRoutesById {
   '/profile/wishlist': typeof ProfileWishlistRoute
   '/admin/': typeof AdminIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/session': typeof ApiAdminSessionRoute
   '/api/razorpay/create-order': typeof ApiRazorpayCreateOrderRoute
   '/api/razorpay/verify': typeof ApiRazorpayVerifyRoute
   '/api/razorpay/webhook': typeof ApiRazorpayWebhookRoute
@@ -310,6 +346,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/admin-login'
     | '/cart'
     | '/checkout'
     | '/contact'
@@ -336,6 +373,9 @@ export interface FileRouteTypes {
     | '/profile/wishlist'
     | '/admin/'
     | '/profile/'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/session'
     | '/api/razorpay/create-order'
     | '/api/razorpay/verify'
     | '/api/razorpay/webhook'
@@ -343,6 +383,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/admin-login'
     | '/cart'
     | '/checkout'
     | '/contact'
@@ -368,6 +409,9 @@ export interface FileRouteTypes {
     | '/profile/wishlist'
     | '/admin'
     | '/profile'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/session'
     | '/api/razorpay/create-order'
     | '/api/razorpay/verify'
     | '/api/razorpay/webhook'
@@ -376,6 +420,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/admin-login'
     | '/cart'
     | '/checkout'
     | '/contact'
@@ -402,6 +447,9 @@ export interface FileRouteTypes {
     | '/profile/wishlist'
     | '/admin/'
     | '/profile/'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/session'
     | '/api/razorpay/create-order'
     | '/api/razorpay/verify'
     | '/api/razorpay/webhook'
@@ -411,6 +459,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
@@ -425,6 +474,9 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   WomenRoute: typeof WomenRoute
   ProductIdRoute: typeof ProductIdRoute
+  ApiAdminLoginRoute: typeof ApiAdminLoginRoute
+  ApiAdminLogoutRoute: typeof ApiAdminLogoutRoute
+  ApiAdminSessionRoute: typeof ApiAdminSessionRoute
   ApiRazorpayCreateOrderRoute: typeof ApiRazorpayCreateOrderRoute
   ApiRazorpayVerifyRoute: typeof ApiRazorpayVerifyRoute
   ApiRazorpayWebhookRoute: typeof ApiRazorpayWebhookRoute
@@ -451,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-login': {
+      id: '/admin-login'
+      path: '/admin-login'
+      fullPath: '/admin-login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cart': {
@@ -635,6 +694,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileWishlistRouteImport
       parentRoute: typeof ProfileRoute
     }
+    '/api/admin/login': {
+      id: '/api/admin/login'
+      path: '/api/admin/login'
+      fullPath: '/api/admin/login'
+      preLoaderRoute: typeof ApiAdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/logout': {
+      id: '/api/admin/logout'
+      path: '/api/admin/logout'
+      fullPath: '/api/admin/logout'
+      preLoaderRoute: typeof ApiAdminLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/session': {
+      id: '/api/admin/session'
+      path: '/api/admin/session'
+      fullPath: '/api/admin/session'
+      preLoaderRoute: typeof ApiAdminSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/razorpay/create-order': {
       id: '/api/razorpay/create-order'
       path: '/api/razorpay/create-order'
@@ -704,6 +784,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
@@ -718,6 +799,9 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   WomenRoute: WomenRoute,
   ProductIdRoute: ProductIdRoute,
+  ApiAdminLoginRoute: ApiAdminLoginRoute,
+  ApiAdminLogoutRoute: ApiAdminLogoutRoute,
+  ApiAdminSessionRoute: ApiAdminSessionRoute,
   ApiRazorpayCreateOrderRoute: ApiRazorpayCreateOrderRoute,
   ApiRazorpayVerifyRoute: ApiRazorpayVerifyRoute,
   ApiRazorpayWebhookRoute: ApiRazorpayWebhookRoute,
