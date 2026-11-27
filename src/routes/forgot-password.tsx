@@ -57,26 +57,26 @@ function ForgotPasswordPage() {
           {!isSent ? (
             <>
               <div className="mb-8 text-center">
-                <h1 className="text-2xl font-display font-semibold mb-2">Reset Password</h1>
-                <p className="text-sm text-muted-foreground">Enter your email and we'll send you a reset link.</p>
+                <h1 className="text-2xl font-display font-semibold mb-2 text-white">Reset Password</h1>
+                <p className="text-sm text-white/70">Enter your email and we'll send you a reset link.</p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Email</label>
+                  <label className="text-[11px] uppercase tracking-widest text-white/60 font-medium">Email</label>
                   <input
                     {...register("email")}
                     type="email"
                     placeholder="you@example.com"
-                    className="w-full bg-[#141413] border border-[#2a2a28] rounded-md px-4 py-3 text-sm focus:outline-none focus:border-neon focus:ring-1 focus:ring-neon transition-all"
+                    className="w-full bg-white text-neutral-900 placeholder:text-neutral-500 border border-[#2a2a28] rounded-md px-4 py-3 text-sm focus:outline-none focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00] transition-all"
                   />
-                  {errors.email && <p className="text-xs text-[#cc4444] mt-1">{errors.email.message}</p>}
+                  {errors.email && <p className="text-xs text-[#f87171] mt-1">{errors.email.message}</p>}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-neon text-neon-foreground font-medium py-3 rounded-md hover:bg-neon/90 transition-colors flex items-center justify-center mt-2"
+                  className="w-full bg-[#ff6a00] text-black font-medium py-3 rounded-md hover:bg-[#ff6a00]/90 transition-colors flex items-center justify-center mt-2"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Send Reset Link"}
                 </button>
@@ -84,16 +84,16 @@ function ForgotPasswordPage() {
             </>
           ) : (
             <div className="text-center py-6">
-              <div className="w-16 h-16 bg-neon/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-8 h-8 text-neon" />
+              <div className="w-16 h-16 bg-[#ff6a00]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-8 h-8 text-[#ff6a00]" />
               </div>
-              <h2 className="text-2xl font-display font-semibold mb-3">Check Your Email</h2>
-              <p className="text-sm text-muted-foreground mb-8">
+              <h2 className="text-2xl font-display font-semibold mb-3 text-white">Check Your Email</h2>
+              <p className="text-sm text-white/70 mb-8">
                 We've sent a password reset link to your email address. Please check your inbox.
               </p>
               <button
                 onClick={() => router.navigate({ to: "/login" })}
-                className="text-neon hover:underline font-medium text-sm"
+                className="text-[#ff6a00] hover:text-[#ff8533] hover:underline font-medium text-sm"
               >
                 Return to Login
               </button>

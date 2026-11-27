@@ -88,96 +88,96 @@ function SignupPage() {
       <div className="flex-1 flex items-center justify-center p-4 relative z-10 py-12">
         <div className="w-full max-w-md bg-[#0e0e0d] border border-[#2a2a28] rounded-xl p-6 md:p-8 shadow-2xl">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-display font-semibold mb-2">Create Account</h1>
-            <p className="text-sm text-muted-foreground">Join the next generation of footwear</p>
+            <h1 className="text-2xl font-display font-semibold mb-2 text-white">Create Account</h1>
+            <p className="text-sm text-white/70">Join the next generation of footwear</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Full Name</label>
+              <label className="text-[11px] uppercase tracking-widest text-white/60 font-medium">Full Name</label>
               <input
                 {...register("name")}
                 type="text"
                 placeholder="John Doe"
-                className="w-full bg-[#141413] border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-neon focus:ring-1 focus:ring-neon transition-all"
+                className="w-full bg-white text-neutral-900 placeholder:text-neutral-500 border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00] transition-all"
               />
-              {errors.name && <p className="text-xs text-[#cc4444]">{errors.name.message}</p>}
+              {errors.name && <p className="text-xs text-[#f87171]">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Email</label>
+              <label className="text-[11px] uppercase tracking-widest text-white/60 font-medium">Email</label>
               <input
                 {...register("email")}
                 type="email"
                 placeholder="you@example.com"
-                className="w-full bg-[#141413] border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-neon focus:ring-1 focus:ring-neon transition-all"
+                className="w-full bg-white text-neutral-900 placeholder:text-neutral-500 border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00] transition-all"
               />
-              {errors.email && <p className="text-xs text-[#cc4444]">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-[#f87171]">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Phone Number (Optional)</label>
+              <label className="text-[11px] uppercase tracking-widest text-white/60 font-medium">Phone Number (Optional)</label>
               <input
                 {...register("phone")}
                 type="tel"
                 placeholder="+1 (555) 000-0000"
-                className="w-full bg-[#141413] border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-neon focus:ring-1 focus:ring-neon transition-all"
+                className="w-full bg-white text-neutral-900 placeholder:text-neutral-500 border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00] transition-all"
               />
-              {errors.phone && <p className="text-xs text-[#cc4444]">{errors.phone.message}</p>}
+              {errors.phone && <p className="text-xs text-[#f87171]">{errors.phone.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Password</label>
+              <label className="text-[11px] uppercase tracking-widest text-white/60 font-medium">Password</label>
               <div className="relative">
                 <input
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className="w-full bg-[#141413] border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-neon focus:ring-1 focus:ring-neon transition-all pr-12"
+                  className="w-full bg-white text-neutral-900 placeholder:text-neutral-500 border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00] transition-all pr-12"
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {errors.password && <p className="text-xs text-[#cc4444]">{errors.password.message}</p>}
+              {errors.password && <p className="text-xs text-[#f87171]">{errors.password.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Confirm Password</label>
+              <label className="text-[11px] uppercase tracking-widest text-white/60 font-medium">Confirm Password</label>
               <div className="relative">
                 <input
                   {...register("confirmPassword")}
                   type={showConfirm ? "text" : "password"}
                   placeholder="••••••••"
-                  className="w-full bg-[#141413] border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-neon focus:ring-1 focus:ring-neon transition-all pr-12"
+                  className="w-full bg-white text-neutral-900 placeholder:text-neutral-500 border border-[#2a2a28] rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00] transition-all pr-12"
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900"
                 >
                   {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {errors.confirmPassword && <p className="text-xs text-[#cc4444]">{errors.confirmPassword.message}</p>}
+              {errors.confirmPassword && <p className="text-xs text-[#f87171]">{errors.confirmPassword.message}</p>}
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-neon text-neon-foreground font-medium py-3 rounded-md hover:bg-neon/90 transition-colors flex items-center justify-center mt-4"
+              className="w-full bg-[#ff6a00] text-black font-medium py-3 rounded-md hover:bg-[#ff6a00]/90 transition-colors flex items-center justify-center mt-4"
             >
               {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Create Account"}
             </button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-muted-foreground">
+          <div className="mt-8 text-center text-sm text-white/70">
             Already have an account?{" "}
-            <Link to="/login" className="text-foreground font-medium hover:text-neon transition-colors">
+            <Link to="/login" className="text-[#ff6a00] font-medium hover:text-[#ff8533] transition-colors">
               Sign in
             </Link>
           </div>

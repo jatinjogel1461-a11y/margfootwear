@@ -14,6 +14,9 @@ export interface Product {
   rating: number;
   reviews: number;
   description: string;
+  modelUrl?: string;
+  iosModelUrl?: string;
+  modelRotation?: [number, number, number];
 }
 
 const C = {
@@ -40,8 +43,8 @@ const kidsSizes = [1, 2, 3, 4, 5, 6];
 
 export const products: Product[] = [
   // men (19)
-  { id: "sv-zz-demo-shoe", name: "Marg Demo Shoe", category: "men", sub: "Casual", price: 1, colors: C.blackOrange, sizes: mensSizes, isNew: true, releaseDate: "2026-11-20", rating: 5.0, reviews: 1, description: "Demo product for testing checkout." },
-  { id: "sv-velocity-x", name: "Marg Velocity X", category: "men", sub: "Running", price: 12999, colors: C.blackOrange, sizes: mensSizes, isNew: true, releaseDate: "2026-06-15", rating: 4.8, reviews: 142, description: "Lightweight carbon-plated runner engineered for speed. Energy-return foam delivers explosive takeoff on every stride." },
+  { id: "sv-zz-demo-shoe", name: "Marg Demo Shoe", category: "men", sub: "Casual", price: 1, colors: C.blackOrange, sizes: mensSizes, isNew: true, releaseDate: "2026-11-20", rating: 5.0, reviews: 1, description: "Demo product for testing checkout.", modelUrl: "/models/shoe-1.glb" },
+  { id: "sv-velocity-x", name: "Marg Velocity X", category: "men", sub: "Running", price: 12999, colors: C.blackOrange, sizes: mensSizes, isNew: true, releaseDate: "2026-06-15", rating: 4.8, reviews: 142, description: "Lightweight carbon-plated runner engineered for speed. Energy-return foam delivers explosive takeoff on every stride.", modelUrl: "/models/shoe-2.glb" },
   { id: "sv-aero-pulse", name: "Marg Aero Pulse", category: "men", sub: "Running", price: 10499, colors: C.blueWhite, sizes: mensSizes, rating: 4.6, reviews: 89, description: "Daily training shoe with breathable engineered mesh and responsive midsole." },
   { id: "sv-court-pro", name: "Marg Court Pro", category: "men", sub: "Sports", price: 8999, colors: C.blackOrange, sizes: mensSizes, rating: 4.5, reviews: 64, description: "Multi-court traction with lateral support for explosive cuts." },
   { id: "sv-urban-low", name: "Marg Urban Low", category: "men", sub: "Casual", price: 7499, colors: C.blueWhite, sizes: mensSizes, rating: 4.4, reviews: 51, description: "Minimalist everyday silhouette in premium leather." },
@@ -58,7 +61,7 @@ export const products: Product[] = [
   { id: "sv-classic-m", name: "Marg Classic M", category: "men", sub: "Casual", price: 6999, colors: C.blueWhite, sizes: mensSizes, rating: 4.3, reviews: 130, description: "A timeless design updated for modern comfort." },
   { id: "sv-impact-trainer", name: "Marg Impact Trainer", category: "men", sub: "Training", price: 10499, colors: C.blackOrange, sizes: mensSizes, rating: 4.7, reviews: 67, description: "Absorbs shock during plyometrics and heavy lifts." },
   { id: "sv-bounce-m", name: "Marg Bounce M", category: "men", sub: "Sports", price: 9499, colors: C.pinkBlush, sizes: mensSizes, rating: 4.5, reviews: 92, description: "Superior grip and court feel for dynamic players." },
-  { id: "sv-infinity-run", name: "Marg Infinity Run", category: "men", sub: "Running", price: 14999, colors: C.blueWhite, sizes: mensSizes, isNew: true, releaseDate: "2026-07-20", rating: 4.9, reviews: 15, description: "Limitless cushioning for endless miles." },
+  { id: "sv-infinity-run", name: "Marg Infinity Run", category: "men", sub: "Running", price: 14999, colors: C.blueWhite, sizes: mensSizes, isNew: true, releaseDate: "2026-07-20", rating: 4.9, reviews: 15, description: "Limitless cushioning for endless miles.", modelUrl: "/models/shoe-3.glb" },
 
   // women (18)
   { id: "sv-glide-w", name: "Marg Glide W", category: "women", sub: "Running", price: 11499, colors: C.pinkBlush, sizes: womensSizes, isNew: true, releaseDate: "2026-06-18", rating: 4.9, reviews: 211, description: "Plush long-distance ride with adaptive heel cradle." },

@@ -39,6 +39,7 @@ import { Route as ProfileOrdersRouteImport } from './routes/profile/orders'
 import { Route as ProfilePasswordRouteImport } from './routes/profile/password'
 import { Route as ProfilePaymentRouteImport } from './routes/profile/payment'
 import { Route as ProfileWishlistRouteImport } from './routes/profile/wishlist'
+import { Route as TryonProductIdRouteImport } from './routes/tryon.$productId'
 import { Route as ApiAdminLoginRouteImport } from './routes/api/admin/login'
 import { Route as ApiAdminLogoutRouteImport } from './routes/api/admin/logout'
 import { Route as ApiAdminSessionRouteImport } from './routes/api/admin/session'
@@ -196,6 +197,11 @@ const ProfileWishlistRoute = ProfileWishlistRouteImport.update({
   path: '/wishlist',
   getParentRoute: () => ProfileRoute,
 } as any)
+const TryonProductIdRoute = TryonProductIdRouteImport.update({
+  id: '/tryon/$productId',
+  path: '/tryon/$productId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminLoginRoute = ApiAdminLoginRouteImport.update({
   id: '/api/admin/login',
   path: '/api/admin/login',
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/profile/password': typeof ProfilePasswordRoute
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
+  '/tryon/$productId': typeof TryonProductIdRoute
   '/admin/': typeof AdminIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/api/admin/login': typeof ApiAdminLoginRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/profile/password': typeof ProfilePasswordRoute
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
+  '/tryon/$productId': typeof TryonProductIdRoute
   '/admin': typeof AdminIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/api/admin/login': typeof ApiAdminLoginRoute
@@ -331,6 +339,7 @@ export interface FileRoutesById {
   '/profile/password': typeof ProfilePasswordRoute
   '/profile/payment': typeof ProfilePaymentRoute
   '/profile/wishlist': typeof ProfileWishlistRoute
+  '/tryon/$productId': typeof TryonProductIdRoute
   '/admin/': typeof AdminIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/api/admin/login': typeof ApiAdminLoginRoute
@@ -371,6 +380,7 @@ export interface FileRouteTypes {
     | '/profile/password'
     | '/profile/payment'
     | '/profile/wishlist'
+    | '/tryon/$productId'
     | '/admin/'
     | '/profile/'
     | '/api/admin/login'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/profile/password'
     | '/profile/payment'
     | '/profile/wishlist'
+    | '/tryon/$productId'
     | '/admin'
     | '/profile'
     | '/api/admin/login'
@@ -445,6 +456,7 @@ export interface FileRouteTypes {
     | '/profile/password'
     | '/profile/payment'
     | '/profile/wishlist'
+    | '/tryon/$productId'
     | '/admin/'
     | '/profile/'
     | '/api/admin/login'
@@ -474,6 +486,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   WomenRoute: typeof WomenRoute
   ProductIdRoute: typeof ProductIdRoute
+  TryonProductIdRoute: typeof TryonProductIdRoute
   ApiAdminLoginRoute: typeof ApiAdminLoginRoute
   ApiAdminLogoutRoute: typeof ApiAdminLogoutRoute
   ApiAdminSessionRoute: typeof ApiAdminSessionRoute
@@ -694,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileWishlistRouteImport
       parentRoute: typeof ProfileRoute
     }
+    '/tryon/$productId': {
+      id: '/tryon/$productId'
+      path: '/tryon/$productId'
+      fullPath: '/tryon/$productId'
+      preLoaderRoute: typeof TryonProductIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/login': {
       id: '/api/admin/login'
       path: '/api/admin/login'
@@ -799,6 +819,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   WomenRoute: WomenRoute,
   ProductIdRoute: ProductIdRoute,
+  TryonProductIdRoute: TryonProductIdRoute,
   ApiAdminLoginRoute: ApiAdminLoginRoute,
   ApiAdminLogoutRoute: ApiAdminLogoutRoute,
   ApiAdminSessionRoute: ApiAdminSessionRoute,

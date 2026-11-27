@@ -1,11 +1,12 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/PageShell";
 import { Shoe3D } from "@/components/Shoe3D";
+import { ShoeARViewer } from "@/components/ShoeARViewer";
 import { getProduct, products, formatINR, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Star, ShoppingBag, Zap } from "lucide-react";
+import { Star, ShoppingBag, Zap, Footprints } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoeSpecs } from "@/components/ShoeSpecs";
@@ -54,6 +55,7 @@ function ProductPage() {
   const [size, setSize] = useState(product.sizes[Math.floor(product.sizes.length / 2)]);
   const [qty, setQty] = useState(1);
   const [unit, setUnit] = useState<DimensionUnit>("mm");
+  const [viewerMode, setViewerMode] = useState<"3d" | "ar">("3d");
   const [showDimensions, setShowDimensions] = useState(false);
   const [scanTrigger, setScanTrigger] = useState(0);
   const [highlightedDim, setHighlightedDim] = useState<DimensionKey | null>(null);
@@ -85,6 +87,7 @@ function ProductPage() {
     setColorIdx(0);
     setSize(product.sizes[Math.floor(product.sizes.length / 2)]);
     setQty(1);
+    setViewerMode("3d");
     setShowDimensions(autoScannedProducts.has(product.id));
     setHighlightedDim(null);
   }, [product.id, product.sizes]);
@@ -140,21 +143,59 @@ function ProductPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="relative aspect-square rounded-3xl border border-border bg-surface overflow-hidden"
         >
-          <Shoe3D
-            color={color.hex}
-            slug={product.id}
-            showAutoRotateToggle
-            showDimensionsToggle
-            dimensions={dimensions}
-            dimensionUnit={unit}
-            showDimensions={showDimensions}
-            onShowDimensionsChange={setShowDimensions}
-            scanTrigger={scanTrigger}
-            onScanProgress={handleScanProgress}
-            highlightedDim={highlightedDim}
-            sizeScale={sizeScale}
-            onUserInteract={() => setHighlightedDim(null)}
-          />
+          {product.modelUrl && (
+            <div className="absolute top-3 left-3 z-20 inline-flex items-center rounded-full glass p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewerMode("3d")}
+                aria-pressed={viewerMode === "3d"}
+                className={`px-3 py-1 text-[11px] tracking-wider rounded-full transition ${
+                  viewerMode === "3d"
+                    ? "bg-neon text-neon-foreground font-semibold"
+                    : "text-foreground hover:text-neon"
+                }`}
+              >
+                3D
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewerMode("ar")}
+                aria-pressed={viewerMode === "ar"}
+                className={`px-3 py-1 text-[11px] tracking-wider rounded-full transition ${
+                  viewerMode === "ar"
+                    ? "bg-neon text-neon-foreground font-semibold"
+                    : "text-foreground hover:text-neon"
+                }`}
+              >
+                AR
+              </button>
+            </div>
+          )}
+
+          {viewerMode === "ar" && product.modelUrl ? (
+            <ShoeARViewer
+              modelUrl={product.modelUrl}
+              iosModelUrl={product.iosModelUrl}
+              posterUrl="/models/sneaker/thumbnail.webp"
+              alt={product.name}
+            />
+          ) : (
+            <Shoe3D
+              color={color.hex}
+              slug={product.id}
+              showAutoRotateToggle
+              showDimensionsToggle
+              dimensions={dimensions}
+              dimensionUnit={unit}
+              showDimensions={showDimensions}
+              onShowDimensionsChange={setShowDimensions}
+              scanTrigger={scanTrigger}
+              onScanProgress={handleScanProgress}
+              highlightedDim={highlightedDim}
+              sizeScale={sizeScale}
+              onUserInteract={() => setHighlightedDim(null)}
+            />
+          )}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -239,6 +280,14 @@ function ProductPage() {
               <Zap className="h-4 w-4" /> Buy Now
             </motion.button>
           </div>
+
+          <Link
+            to="/tryon/$productId"
+            params={{ productId: product.id }}
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 border border-neon/60 bg-neon/10 text-neon font-semibold px-6 py-3 min-h-[46px] rounded-full hover:bg-neon hover:text-neon-foreground transition"
+          >
+            <Footprints className="h-4 w-4" /> Try on your foot
+          </Link>
         </motion.div>
       </div>
 
